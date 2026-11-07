@@ -1,0 +1,262 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens da Empório da Música.
+ * Prefixo em- para não colidir com os tokens do shadcn (accent, input, muted...).
+ * Escuro é o padrão; o tema claro (v1) vale só dentro de [data-theme="light"] (chat).
+ */
+:root {
+  --em-bg: #120b08;
+  --em-surface: #1c120d;
+  --em-surface-2: #24160f;
+  --em-sidebar: #170e0a;
+  --em-input: #1f140f;
+  --em-line: rgba(244, 233, 220, 0.1);
+  --em-line-strong: rgba(244, 233, 220, 0.16);
+  --em-text: #f4e9dc;
+  --em-text-2: #d8c3af;
+  --em-muted: #b9a08c;
+  --em-faint: #9c8574;
+  --em-accent: #ff7a45;
+  --em-on-accent: #1f0f08;
+  --em-accent-text: #ff9a6e;
+  --em-bubble-user: #8a4428;
+  --em-on-bubble-user: #fff4e8;
+  --em-bubble-bot: #2a1c15;
+  --em-header: #120b08;
+  --em-on-header: #f4e9dc;
+  --em-card: #1c120d;
+  --em-ok: #6bcb77;
+  --em-ok-chip-bg: #1f3a22;
+  --em-ok-chip-fg: #9be0a5;
+  --em-err-bg: #2a1a14;
+  --em-err-line: #5a3424;
+  --em-err-icon-bg: #3a2119;
+  --em-err-icon-fg: #ffa585;
+
+  /* Seções creme da landing */
+  --em-cream: #efe5d6;
+  --em-cream-tile: #f6eee2;
+  --em-cream-line: #d8c7b0;
+  --em-ink: #22150f;
+  --em-ink-2: #4a3226;
+  --em-ink-muted: #6a5142;
+  --em-accent-on-cream: #b23e15;
+
+  /* Mapeamento para os componentes do shadcn (Sheet) */
+  --background: var(--em-bg);
+  --foreground: var(--em-text);
+  --popover: var(--em-sidebar);
+  --popover-foreground: var(--em-text);
+  --border: var(--em-line);
+  --ring: var(--em-accent);
+  --radius: 0.75rem;
+}
+
+[data-theme="light"] {
+  --em-bg: #f4ecdf;
+  --em-surface: #fffaf3;
+  --em-surface-2: #f1e7d8;
+  --em-sidebar: #ede1cf;
+  --em-input: #fffaf3;
+  --em-line: #e0cfb8;
+  --em-line-strong: #d8c3a7;
+  --em-text: #2b1910;
+  --em-text-2: #4a3226;
+  --em-muted: #6f5544;
+  --em-faint: #6f5544;
+  --em-accent: #f2622e;
+  --em-on-accent: #1f0f08;
+  --em-accent-text: #b23e15;
+  --em-bubble-user: #8a4428;
+  --em-on-bubble-user: #fff4e8;
+  --em-bubble-bot: #fffaf3;
+  --em-header: #3b1e14;
+  --em-on-header: #f7ebdd;
+  --em-card: #fffaf3;
+  --em-ok-chip-bg: #e1eedb;
+  --em-ok-chip-fg: #2f6a33;
+  --em-err-bg: #fbeee8;
+  --em-err-line: #e8b9a6;
+  --em-err-icon-bg: #f6d9d2;
+  --em-err-icon-fg: #8a2617;
+  --popover: var(--em-sidebar);
+  --popover-foreground: var(--em-text);
+  --background: var(--em-bg);
+  --foreground: var(--em-text);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-em-bg: var(--em-bg);
+  --color-em-surface: var(--em-surface);
+  --color-em-surface-2: var(--em-surface-2);
+  --color-em-sidebar: var(--em-sidebar);
+  --color-em-input: var(--em-input);
+  --color-em-line: var(--em-line);
+  --color-em-line-strong: var(--em-line-strong);
+  --color-em-text: var(--em-text);
+  --color-em-text-2: var(--em-text-2);
+  --color-em-muted: var(--em-muted);
+  --color-em-faint: var(--em-faint);
+  --color-em-accent: var(--em-accent);
+  --color-em-on-accent: var(--em-on-accent);
+  --color-em-accent-text: var(--em-accent-text);
+  --color-em-bubble-user: var(--em-bubble-user);
+  --color-em-on-bubble-user: var(--em-on-bubble-user);
+  --color-em-bubble-bot: var(--em-bubble-bot);
+  --color-em-header: var(--em-header);
+  --color-em-on-header: var(--em-on-header);
+  --color-em-card: var(--em-card);
+  --color-em-ok: var(--em-ok);
+  --color-em-ok-chip-bg: var(--em-ok-chip-bg);
+  --color-em-ok-chip-fg: var(--em-ok-chip-fg);
+  --color-em-err-bg: var(--em-err-bg);
+  --color-em-err-line: var(--em-err-line);
+  --color-em-err-icon-bg: var(--em-err-icon-bg);
+  --color-em-err-icon-fg: var(--em-err-icon-fg);
+  --color-em-cream: var(--em-cream);
+  --color-em-cream-tile: var(--em-cream-tile);
+  --color-em-cream-line: var(--em-cream-line);
+  --color-em-ink: var(--em-ink);
+  --color-em-ink-2: var(--em-ink-2);
+  --color-em-ink-muted: var(--em-ink-muted);
+  --color-em-accent-on-cream: var(--em-accent-on-cream);
+
+  --font-sans: var(--font-instrument), system-ui, sans-serif;
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-heading: var(--font-display);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--em-bg);
+    color: var(--em-text);
+    font-family: var(--font-sans);
+  }
+  :focus-visible {
+    outline: 2px solid var(--em-accent);
+    outline-offset: 2px;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  /* Container da landing: 1280px com respiro lateral (80px em 1440). */
+  .em-wrap {
+    width: min(1280px, calc(100% - 64px));
+    margin-inline: auto;
+  }
+  @media (max-width: 640px) {
+    .em-wrap {
+      width: calc(100% - 40px);
+    }
+  }
+  /* Rótulo técnico em mono, caixa alta */
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+/* Chamada de atenção do botão "Fale com a Clave": um halo que pulsa de leve a cada 3 s. */
+@keyframes em-attn {
+  0%,
+  55% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 69, 0.55);
+  }
+  85%,
+  100% {
+    box-shadow: 0 0 0 12px rgba(255, 122, 69, 0);
+  }
+}
+.em-attn {
+  animation: em-attn 3s ease-out infinite;
+}
+@keyframes em-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+.em-live {
+  animation: em-live 1.6s ease-in-out infinite;
+}
+
+@keyframes em-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.em-cursor,
+.em-streaming > p:last-child::after,
+.em-streaming > :is(ul, ol):last-child > li:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 1.05em;
+  margin-left: 3px;
+  vertical-align: -3px;
+  border-radius: 1px;
+  background: var(--em-accent);
+  animation: em-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .em-cursor,
+  .em-streaming > p:last-child::after,
+  .em-streaming > :is(ul, ol):last-child > li:last-child::after {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
