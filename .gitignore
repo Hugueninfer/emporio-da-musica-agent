@@ -27,3 +27,6 @@ desafio_tecnico_ai_eng_artefact.pdf
 Thumbs.db
 .vscode/
 .idea/
+
+# Backend: dados gerados (python -m emporio.data.build)
+backend/var/
