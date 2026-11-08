@@ -7,6 +7,13 @@ fictícia de instrumentos musicais em Campo Grande/MS. A assistente se chama **C
 clientes em português ou inglês, consulta catálogo, promoções e pedidos quando precisa de **dados**,
 consulta o manual quando a dúvida é de **política**, e recusa com educação o que foge do escopo.
 
+**▶ Demo online:** [emporio-da-musica-murex.vercel.app](https://emporio-da-musica-murex.vercel.app) (inglês) ·
+[/pt](https://emporio-da-musica-murex.vercel.app/pt) (português) · chat em
+[/pt/assistente](https://emporio-da-musica-murex.vercel.app/pt/assistente).
+Backend no plano gratuito do Render: se ninguém usou nos últimos minutos, a primeira resposta pode levar
+até ~1 min enquanto o servidor acorda. Para testar a consulta de pedido, use o pedido **8** com o telefone
+**(67) 99654-7821** (dados fictícios do desafio).
+
 <p align="center">
   <img src="docs/img/clave-demo.gif" width="560" alt="Conversa com a Clave: recomendação de violão com cards do catálogo, verificação de pedido pelo formulário (LGPD) e card do pedido com rastreio">
 </p>
