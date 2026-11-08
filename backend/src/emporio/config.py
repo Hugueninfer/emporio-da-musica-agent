@@ -17,6 +17,7 @@ VAR_DIR = Path(os.getenv("EMPORIO_VAR_DIR", BACKEND_DIR / "var"))
 DB_PATH = VAR_DIR / "store.db"
 POLICIES_PATH = VAR_DIR / "policies.json"
 CHECKPOINTS_PATH = VAR_DIR / "conversas.sqlite3"
+METRICS_PATH = VAR_DIR / "metrics.jsonl"
 
 TZ = ZoneInfo("America/Campo_Grande")
 MODEL = os.getenv("EMPORIO_MODEL", "claude-sonnet-5-5")

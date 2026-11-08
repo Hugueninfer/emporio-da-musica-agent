@@ -5,6 +5,7 @@ from typing import Annotated
 
 from langchain.agents import AgentState, create_agent
 from langchain.agents.middleware import ModelCallLimitMiddleware, ModelRequest, dynamic_prompt
+from langchain_anthropic.middleware import AnthropicPromptCachingMiddleware
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -34,7 +35,7 @@ class ClaveContext:
 
 @dynamic_prompt
 def clave_prompt(request: ModelRequest) -> SystemMessage:
-    """Persona fixa (em cache) + data/hora e idioma da página (mudam a cada mensagem)."""
+    """Persona fixa (em cache) + data e idioma da página."""
     ctx = request.runtime.context or ClaveContext()
     return SystemMessage(
         content=[
@@ -58,7 +59,12 @@ def build_agent(
     return create_agent(
         model or default_model(),
         build_tools(ferramentas or Ferramentas()),
-        middleware=[clave_prompt, ModelCallLimitMiddleware(run_limit=8, exit_behavior="end")],
+        middleware=[
+            clave_prompt,
+            # cache também nas ferramentas e no histórico da conversa (até 4 pontos de cache por chamada)
+            AnthropicPromptCachingMiddleware(unsupported_model_behavior="ignore"),
+            ModelCallLimitMiddleware(run_limit=8, exit_behavior="end"),
+        ],
         state_schema=ClaveState,
         context_schema=ClaveContext,
         checkpointer=checkpointer,

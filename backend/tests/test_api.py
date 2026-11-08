@@ -7,6 +7,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from emporio.agent.graph import build_agent
 from emporio.api.app import create_app
+from emporio.metrics import MetricsLog
 from emporio.tools import Ferramentas
 from tests.fakes import ScriptedModel, tool_call
 
@@ -29,7 +30,7 @@ def setup(store):
     def make(*script):
         model = ScriptedModel(script=list(script))
         f = Ferramentas(store)
-        app = create_app(build_agent(model, f, InMemorySaver()), f)
+        app = create_app(build_agent(model, f, InMemorySaver()), f, MetricsLog(None))
         return TestClient(app), model
 
     return make

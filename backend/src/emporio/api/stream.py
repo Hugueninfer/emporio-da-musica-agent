@@ -14,6 +14,7 @@ from typing import Any
 from langchain_core.messages import AIMessage, ToolMessage
 
 from emporio.agent.prompt import SUGGESTIONS_CLOSE, SUGGESTIONS_OPEN
+from emporio.metrics import TurnMetrics
 
 log = logging.getLogger(__name__)
 
@@ -89,8 +90,13 @@ def _json(content: Any) -> Any:
     return content
 
 
-async def ui_message_stream(agent, inputs: dict, config: dict, context: Any) -> AsyncIterator[dict]:
-    """Roda o agente e devolve os chunks do protocolo (dicts), do `start` ao `finish`."""
+async def ui_message_stream(
+    agent, inputs: dict, config: dict, context: Any, metrics: TurnMetrics | None = None
+) -> AsyncIterator[dict]:
+    """Roda o agente e devolve os chunks do protocolo (dicts), do `start` ao `finish`.
+
+    Com `metrics`, mede tokens, custo e latência; o resumo vai no `messageMetadata` do `finish`."""
+    metrics = metrics or TurnMetrics(model="")
     yield {"type": "start", "messageId": f"msg_{uuid.uuid4().hex}"}
     yield {"type": "start-step"}
 
@@ -104,6 +110,7 @@ async def ui_message_stream(agent, inputs: dict, config: dict, context: Any) -> 
             return
         if text_id is None:
             text_id = f"txt_{uuid.uuid4().hex[:12]}"
+            metrics.first_token()
             yield {"type": "text-start", "id": text_id}
         yield {"type": "text-delta", "id": text_id, "delta": delta}
 
@@ -123,8 +130,10 @@ async def ui_message_stream(agent, inputs: dict, config: dict, context: Any) -> 
                         yield chunk
                 continue
 
-            for update in (payload or {}).values():
+            for node, update in (payload or {}).items():
                 for msg in (update or {}).get("messages", []) if isinstance(update, dict) else []:
+                    if isinstance(msg, AIMessage) and node == "model":
+                        metrics.add_usage(msg.usage_metadata)
                     if isinstance(msg, AIMessage) and msg.tool_calls:
                         for chunk in close_text():
                             yield chunk
@@ -132,6 +141,7 @@ async def ui_message_stream(agent, inputs: dict, config: dict, context: Any) -> 
                             if call["id"] in announced:
                                 continue
                             announced.add(call["id"])
+                            metrics.tool_started(call["id"], call["name"])
                             yield {"type": "tool-input-start", "toolCallId": call["id"], "toolName": call["name"]}
                             yield {
                                 "type": "tool-input-available",
@@ -140,6 +150,7 @@ async def ui_message_stream(agent, inputs: dict, config: dict, context: Any) -> 
                                 "input": call["args"],
                             }
                     elif isinstance(msg, ToolMessage):
+                        metrics.tool_finished(msg.tool_call_id)
                         if msg.status == "error":
                             yield {"type": "tool-output-error", "toolCallId": msg.tool_call_id, "errorText": msg.text}
                         else:
@@ -150,10 +161,11 @@ async def ui_message_stream(agent, inputs: dict, config: dict, context: Any) -> 
                             }
     except Exception:  # o cliente vê o erro amigável da UI; o detalhe fica no log
         log.exception("falha ao rodar o agente")
+        metrics.error = True
         for chunk in close_text():
             yield chunk
         yield {"type": "error", "errorText": "Não consegui responder agora. Tenta de novo em instantes?"}
-        yield {"type": "finish"}
+        yield {"type": "finish", "messageMetadata": metrics.summary()}
         return
 
     for chunk in close_text():
@@ -161,4 +173,4 @@ async def ui_message_stream(agent, inputs: dict, config: dict, context: Any) -> 
     if filt.suggestions:
         yield {"type": "data-suggestions", "data": {"items": filt.suggestions}}
     yield {"type": "finish-step"}
-    yield {"type": "finish"}
+    yield {"type": "finish", "messageMetadata": metrics.summary()}

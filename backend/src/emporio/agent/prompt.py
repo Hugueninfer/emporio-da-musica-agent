@@ -94,9 +94,10 @@ A interface transforma essa linha em botões; nunca comente sobre ela.
 
 
 def context_block(now: datetime, locale: str) -> str:
-    """Contexto que muda a cada mensagem (não entra no cache)."""
+    """Contexto variável, depois do bloco em cache. Só a data (não a hora): assim o prefixo da conversa
+    continua em cache o dia todo. Hora e "está aberta agora?" vêm de `status_loja`."""
     idioma = "inglês" if locale == "en" else "português"
     return (
-        f"Agora: {WEEKDAYS[now.weekday()]}, {now:%d/%m/%Y %H:%M} (horário de Campo Grande).\n"
+        f"Hoje: {WEEKDAYS[now.weekday()]}, {now:%d/%m/%Y} (Campo Grande). Para a hora atual, use status_loja.\n"
         f"Idioma da página do cliente: {idioma} ({locale})."
     )

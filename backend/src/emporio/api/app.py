@@ -19,6 +19,7 @@ from emporio import config
 from emporio.agent.graph import ClaveContext, build_agent
 from emporio.api.privacy import find_verification, redact
 from emporio.api.stream import HEADERS, sse, ui_message_stream
+from emporio.metrics import MetricsLog, TurnMetrics
 from emporio.tools import Ferramentas
 
 log = logging.getLogger("emporio")
@@ -80,12 +81,13 @@ def history_seed(req: ChatRequest) -> list[BaseMessage]:
     return seed
 
 
-def create_app(agent=None, ferramentas: Ferramentas | None = None) -> FastAPI:
-    """`agent`/`ferramentas` podem ser injetados nos testes; em produção são criados no startup."""
+def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: MetricsLog | None = None) -> FastAPI:
+    """`agent`/`ferramentas`/`metrics` podem ser injetados nos testes; em produção são criados no startup."""
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.ferramentas = ferramentas or Ferramentas()
+        app.state.metrics = metrics or MetricsLog(config.METRICS_PATH)
         if agent is not None:
             app.state.agent = agent
             yield
@@ -109,6 +111,11 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None) -> FastAPI:
     async def health():
         return {"ok": True, "modelo": config.MODEL, "chave_configurada": bool(os.getenv("ANTHROPIC_API_KEY"))}
 
+    @app.get("/metrics")
+    async def metrics_report():
+        """Custo, tokens, cache e latência agregados das respostas (últimas 2000)."""
+        return app.state.metrics.report()
+
     @app.post("/api/chat")
     async def chat(req: ChatRequest):
         graph = app.state.agent
@@ -125,10 +132,23 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None) -> FastAPI:
         if verificacoes:
             inputs["verificacoes"] = verificacoes
 
+        turn = TurnMetrics(model=config.MODEL, thread_id=req.id)
+
         async def body():
-            async for chunk in ui_message_stream(graph, inputs, cfg, ClaveContext(locale=req.locale)):
+            async for chunk in ui_message_stream(graph, inputs, cfg, ClaveContext(locale=req.locale), turn):
                 yield sse(chunk)
             yield sse("[DONE]")
+            summary = turn.summary()
+            app.state.metrics.record(summary)
+            log.info(
+                "resposta em %sms (1º token %sms) · %s chamada(s) ao modelo · cache %.0f%% · R$ %.4f · %s",
+                summary["latencia_ms"],
+                summary["primeiro_token_ms"],
+                summary["chamadas_modelo"],
+                summary["cache_hit"] * 100,
+                summary["custo_brl"],
+                ", ".join(f"{t['nome']} {t['ms']}ms" for t in summary["ferramentas"]) or "sem ferramentas",
+            )
 
         return StreamingResponse(body(), media_type="text/event-stream", headers=HEADERS)
 

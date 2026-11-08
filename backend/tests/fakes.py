@@ -31,6 +31,7 @@ class ScriptedModel(BaseChatModel):
             chunk = AIMessageChunk(
                 content=msg.content,
                 id=msg.id,
+                usage_metadata=msg.usage_metadata,
                 tool_call_chunks=[
                     {"name": tc["name"], "args": __import__("json").dumps(tc["args"]), "id": tc["id"], "index": i}
                     for i, tc in enumerate(msg.tool_calls)
@@ -41,7 +42,11 @@ class ScriptedModel(BaseChatModel):
         # texto em pedaços pequenos, como um modelo real
         text = msg.content
         for i in range(0, len(text), 7):
-            chunk = ChatGenerationChunk(message=AIMessageChunk(content=text[i : i + 7], id=msg.id))
+            last = i + 7 >= len(text)
+            piece = AIMessageChunk(
+                content=text[i : i + 7], id=msg.id, usage_metadata=msg.usage_metadata if last else None
+            )
+            chunk = ChatGenerationChunk(message=piece)
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
