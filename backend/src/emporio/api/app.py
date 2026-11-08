@@ -176,6 +176,16 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
         allow_headers=["*"],
     )
 
+    @app.get("/")
+    async def root():
+        """Página do Space no Hugging Face: o que é este serviço e onde está o resto."""
+        return {
+            "servico": "Clave — API do agente de atendimento da Empório da Música",
+            "chat": "POST /api/chat (UI message stream do Vercel AI SDK)",
+            "saude": "/health",
+            "codigo": "https://github.com/Hugueninfer/emporio-da-musica-agent",
+        }
+
     @app.get("/health")
     async def health():
         return {"ok": True, "modelo": config.MODEL, "chave_configurada": bool(os.getenv("ANTHROPIC_API_KEY"))}

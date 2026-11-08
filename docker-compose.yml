@@ -13,7 +13,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - clave-var:/app/var # conversas e métricas sobrevivem a reinícios
+      - clave-dados:/app/var # conversas e métricas sobrevivem a reinícios
 
   frontend:
     build:
@@ -27,4 +27,4 @@ services:
         condition: service_healthy
 
 volumes:
-  clave-var:
+  clave-dados:
