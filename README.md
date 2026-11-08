@@ -7,6 +7,16 @@ fictícia de instrumentos musicais em Campo Grande/MS. A assistente se chama **C
 clientes em português ou inglês, consulta catálogo, promoções e pedidos quando precisa de **dados**,
 consulta o manual quando a dúvida é de **política**, e recusa com educação o que foge do escopo.
 
+<p align="center">
+  <img src="docs/img/clave-demo.gif" width="560" alt="Conversa com a Clave: recomendação de violão com cards do catálogo, verificação de pedido pelo formulário (LGPD) e card do pedido com rastreio">
+</p>
+
+| Site (inglês, violão 3D) | Cliente em inglês numa página em português |
+|---|---|
+| ![Página inicial da Empório da Música com o violão em 3D](docs/img/site.png) | ![Clave respondendo em inglês sobre ukuleles em promoção](docs/img/chat-english.png) |
+| **Recomendação com cards do catálogo** | **Pedido verificado (LGPD) com rastreio e prazos** |
+| ![Clave recomendando violões folk até R$ 1.500 com cards](docs/img/chat-produtos.png) | ![Card do pedido #8 com código de rastreio e resposta da Clave](docs/img/chat-pedido.png) |
+
 - **Agente (Python):** LangChain `create_agent` (grafo LangGraph) + Claude, ferramentas em Python puro,
   regras do manual em código testado, memória por conversa em SQLite.
 - **API:** FastAPI falando o protocolo de stream do Vercel AI SDK. **MCP:** as mesmas ferramentas
@@ -26,7 +36,7 @@ consulta o manual quando a dúvida é de **política**, e recusa com educação 
 | `frontend/` | Site + chat (Next.js 16, Vercel AI SDK, three.js) |
 | `examples/` | Conversas reais com o agente, geradas por script |
 | `data/` | Dados do desafio (CSVs e manual em PDF) |
-| `docs/` | Desenho do backend e plano de implementação |
+| `docs/` | Desenho do backend, plano de implementação e imagens do README |
 | `tools/blender/` | Scripts que modelam o violão/ukulele 3D do site |
 
 ---
