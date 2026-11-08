@@ -1,0 +1,25 @@
+# Backend da Clave no Render (Blueprint). Render → New → Blueprint → este repositório.
+# A chave da Anthropic e a origem do front são preenchidas no painel (nunca no repositório).
+services:
+  - type: web
+    name: clave-backend
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # pedida no painel na criação
+      - key: CORS_ORIGINS
+        sync: false # URL do front na Vercel, ex.: https://emporio-da-musica.vercel.app
+      - key: EMPORIO_MODEL
+        value: claude-sonnet-5-5
+      - key: RATE_PER_VISITOR
+        value: "20" # mensagens por visitante a cada 10 min
+      - key: DAILY_LIMIT
+        value: "300" # mensagens por dia no total (~R$ 18/dia no pior caso com o Sonnet)
+      - key: METRICS_TOKEN
+        generateValue: true # /metrics?token=… (o valor aparece no painel)

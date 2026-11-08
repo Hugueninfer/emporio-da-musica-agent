@@ -37,7 +37,6 @@ consulta o manual quando a dúvida é de **política**, e recusa com educação 
 | `examples/` | Conversas reais com o agente, geradas por script |
 | `data/` | Dados do desafio (CSVs e manual em PDF) |
 | `docs/` | Desenho do backend, plano de implementação e imagens do README |
-| `deploy/` | Publicação do backend no Hugging Face Spaces |
 | `tools/blender/` | Scripts que modelam o violão/ukulele 3D do site |
 
 ---
@@ -87,19 +86,18 @@ npm run dev
 Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (português). O chat fica em
 `/assistente` e no botão flutuante. Sem o `.env.local`, o chat usa um mock local (sem IA).
 
-### Publicação (Hugging Face Spaces + Vercel)
+### Publicação (Render + Vercel)
 
-- **Backend:** um Space Docker no Hugging Face (grátis, sem cartão). `deploy/huggingface/publish.py`
-  monta o Space só com o backend, os dados e o Dockerfile e faz o push:
-  `python deploy/huggingface/publish.py USUARIO/clave-backend`. No Space, em *Settings → Variables and
-  secrets*: secret `ANTHROPIC_API_KEY` (e `METRICS_TOKEN`, opcional) e variável `CORS_ORIGINS` com a
-  URL do front.
+- **Backend:** Blueprint do Render a partir do [`render.yaml`](render.yaml) (plano gratuito, sem cartão),
+  usando o mesmo Dockerfile. A chave da Anthropic e `CORS_ORIGINS` (URL do front) ficam só no painel.
+  O plano gratuito dorme após 15 min sem uso; um monitor gratuito (UptimeRobot) chamando `/health` a
+  cada 10 min o mantém acordado, e o site também o acorda ao abrir.
 - **Front:** projeto na Vercel com *Root Directory* `frontend` e `NEXT_PUBLIC_CHAT_API` apontando para
-  `https://USUARIO-clave-backend.hf.space/api/chat`.
-- **Proteções da API pública:** limite por visitante (`RATE_PER_VISITOR`, 30 mensagens a cada 10 min),
-  teto diário total (`DAILY_LIMIT`, 500) e tamanho máximo da mensagem (`MAX_MESSAGE_CHARS`, 2.000);
-  ao estourar, a Clave responde com uma mensagem pronta sem chamar o modelo. A imagem roda como usuário
-  sem privilégios e usa o IP real do visitante (atrás do proxy) para os limites.
+  `https://SEU-SERVICO.onrender.com/api/chat`.
+- **Proteções da API pública:** limite por visitante (`RATE_PER_VISITOR`), teto diário total
+  (`DAILY_LIMIT`) e tamanho máximo da mensagem (`MAX_MESSAGE_CHARS`, 2.000); ao estourar, a Clave
+  responde com uma mensagem pronta sem chamar o modelo. A imagem roda como usuário sem privilégios e usa
+  o IP real do visitante (atrás do proxy) para os limites; `/metrics` exige `METRICS_TOKEN`.
 
 ### Testes, avaliação, exemplos e MCP
 
@@ -314,7 +312,7 @@ Gerados com o modelo real por `backend/scripts/run_examples.py`, com o relógio 
 - **Proteções adicionais:** limite de taxa por conversa, detecção de PII com o `PIIMiddleware` para
   outros dados (CPF, endereço) e testes adversariais de *prompt injection*.
 - **Produção de verdade:** Postgres no checkpointer (hoje SQLite no disco do container, que some quando
-  o Space reinicia) e limites de uso no Redis, para rodar mais de uma instância.
+  o serviço reinicia) e limites de uso no Redis, para rodar mais de uma instância.
 
 ---
 
