@@ -14,6 +14,10 @@ from emporio.config import now
         ("Tem violão de nylon até 500 reais?", "pt"),
         ("Qual o prazo para devolver um produto?", "pt"),
         ("Vocês estão abertos agora?", "pt"),
+        ("help to find instrument", "en"),
+        ("show me ukuleles", "en"),
+        ("oi vc fala portgues w", "pt"),
+        ("vc tem violao barato?", "pt"),
         ("oi", None),
         ("Pedido #8 · tel. final 7821", None),
         ("ok", None),
@@ -27,5 +31,6 @@ def test_contexto_diz_o_idioma_do_cliente():
     # a nota vai no idioma da resposta, para não puxar o modelo para o outro idioma
     assert turn_context(now(), "pt", "en").startswith("[System context:")
     assert "the customer wrote in English" in turn_context(now(), "pt", "en")
-    assert "a página está em português" in turn_context(now(), "pt", None)
-    assert "the page is in English" in turn_context(now(), "en", None)
+    # sem saber o idioma, a nota não impõe o da página: manda seguir a última mensagem do cliente
+    assert "idioma da última mensagem do cliente" in turn_context(now(), "pt", None)
+    assert "language of the customer's last message" in turn_context(now(), "en", None)

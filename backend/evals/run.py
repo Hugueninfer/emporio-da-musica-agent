@@ -39,6 +39,7 @@ from emporio import config  # noqa: E402
 from emporio.agent.graph import build_agent  # noqa: E402
 from emporio.agent.prompt import SYSTEM_PROMPT  # noqa: E402
 from emporio.api.app import ChatRequest, create_app, prepare_turn  # noqa: E402
+from emporio.api.language import detect_language  # noqa: E402
 from emporio.metrics import MetricsLog  # noqa: E402
 from emporio.tools import Ferramentas  # noqa: E402
 
@@ -162,6 +163,9 @@ def deterministic_checks(case: dict, last: dict) -> list[dict]:
     if case.get("contem_algum"):
         options = case["contem_algum"]
         add(f"contém um de {options}", any(norm(t) in reply for t in options))
+    if case.get("idioma_resposta"):
+        detected = detect_language(last["resposta"])
+        add(f"resposta em {case['idioma_resposta']}", detected == case["idioma_resposta"], f"detectado: {detected}")
     for text in case.get("nao_contem", []):
         add(f'não contém "{text}"', norm(text) not in reply)
     return checks

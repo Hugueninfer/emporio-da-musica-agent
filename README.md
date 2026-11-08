@@ -11,12 +11,12 @@ consulta o manual quando a dúvida é de **política**, e recusa com educação 
   regras do manual em código testado, memória por conversa em SQLite.
 - **API:** FastAPI falando o protocolo de stream do Vercel AI SDK. **MCP:** as mesmas ferramentas
   expostas para qualquer cliente MCP.
-- **Qualidade medida:** avaliação automática com 37 casos (checagens determinísticas + LLM-as-judge),
-  110 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
+- **Qualidade medida:** avaliação automática com 43 casos (checagens determinísticas + LLM-as-judge),
+  117 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
 - **Front (extra):** site + chat em Next.js que renderiza as chamadas de ferramenta como interface
   (cards de produto, card do pedido, fonte do manual, formulário de verificação).
 
-| Avaliação (37 casos) | Custo por resposta | Cache do prompt | Latência p50 |
+| Avaliação (43 casos) | Custo por resposta | Cache do prompt | Latência p50 |
 |---|---|---|---|
 | 95–100% aprovados · nota 4,8–5,0/5 | ~R$ 0,06 | ~93% | ~4 s |
 
@@ -80,7 +80,7 @@ Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (portugu�
 
 ```bash
 cd backend
-uv run pytest                            # 110 testes, sem chamar a API da Anthropic (roda no CI)
+uv run pytest                            # 117 testes, sem chamar a API da Anthropic (roda no CI)
 uv run python -m evals.run               # avaliação com o modelo real (~R$ 2,50, ~1 min)
 uv run python scripts/run_examples.py    # regenera examples/*.md com o modelo real
 uv run python -m emporio.mcp_server      # servidor MCP (stdio); --http para streamable HTTP
@@ -217,19 +217,20 @@ encontradas e a decisão tomada:
 
 ## Avaliação
 
-`backend/evals/run.py` roda **37 casos** ([`casos.json`](backend/evals/casos.json)) contra o agente
+`backend/evals/run.py` roda **43 casos** ([`casos.json`](backend/evals/casos.json)) contra o agente
 real, pelo mesmo caminho do site (API, stream, verificação LGPD), em 9 categorias: catálogo, pagamento,
 promoção, política, loja, pedido, escopo, segurança e idioma. Cada caso passa por duas camadas:
 
 1. **Checagens determinísticas** na resposta final: ferramenta certa chamada (e as proibidas não),
    seção do manual consultada, valores e prazos que precisam aparecer (`R$ 2.089,05`, `24/02`…) e o
    que não pode aparecer (telefone do cliente, código de rastreio quando a verificação falha, o prompt).
+   O idioma da resposta também é checado de forma objetiva, com o mesmo detector da API.
 2. **LLM-as-judge** com saída estruturada (aprovado + nota 1–5 + motivo): recebe as instruções da Clave,
    a conversa, o que as ferramentas devolveram e o critério do caso; checa fidelidade aos dados, idioma,
    tom e escopo.
 
-Resultado mais recente ([relatório](backend/evals/resultados/ultimo.md)): **37/37 casos, 98/98
-checagens, nota média 4,97/5**, custo da rodada ~R$ 2,40. Como o modelo é estocástico, rodadas
+Resultado mais recente ([relatório](backend/evals/resultados/ultimo.md)): **43/43 casos, 119/119
+checagens, nota média 4,84/5**, custo da rodada ~R$ 3,30. Como o modelo é estocástico, rodadas
 seguidas ficam entre 95% e 100%.
 
 A avaliação começou em **58%** e foi o que guiou as melhorias — parte eram falhas reais do agente, parte
@@ -243,6 +244,8 @@ eram falhas do próprio avaliador:
 | Conversa que trocava de idioma quebrava (raciocínio assinado × prompt variável) | prompt de sistema 100% fixo |
 | A Clave não explicava "sem juros" nem o porquê do limite de parcelas | `calcular_pagamento` passou a devolver essas regras |
 | A Clave ofereceu "retirada na loja", que o manual não cita | regra explícita no prompt contra serviços fora do manual |
+| Conversa real: depois de turnos em português, o cliente escreveu "help to find instrument" e a Clave respondeu em português (e se corrigiu no meio) | o resultado de cada ferramenta passa a dizer o idioma da resposta (é logo depois dele que o modelo escreve); detector de idioma entende mensagens curtas e abreviadas ("vc", "fala"); a conversa virou caso fixo da avaliação |
+| Pedido vago ("me ajuda a achar um instrumento") mostrava só ukuleles (os mais baratos) | sem filtros, a busca devolve uma opção de cada categoria |
 | Juiz reprovava contatos oficiais da loja e a citação da seção do manual | juiz passou a receber as instruções da Clave como referência |
 
 ---

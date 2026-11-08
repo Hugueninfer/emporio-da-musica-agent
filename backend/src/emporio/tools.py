@@ -180,7 +180,20 @@ class Ferramentas:
             available = lambda p: p["status"] == "active" and p["stock"] > 0  # noqa: E731
             products = sorted(products, key=lambda p: (not available(p), final_price(p)))
 
-        result: dict = {"produtos": products[: max(1, min(limite, 12))], "total": len(products)}
+        total = len(products)
+        if not any([busca, categoria, preco_min is not None, preco_max is not None, tipo_corda]):
+            # Pedido vago: em vez dos mais baratos (todos ukuleles), a opção mais em conta de cada categoria.
+            per_category: dict[str, dict] = {}
+            for p in products:
+                if p["status"] == "active" and p["stock"] > 0:
+                    per_category.setdefault(p["category"], p)
+            products = list(per_category.values())
+            aviso = (
+                f"Sem filtros: uma opção de cada categoria ({total} produtos no total). "
+                "Pergunte o instrumento e o orçamento para afinar."
+            )
+
+        result: dict = {"produtos": products[: max(1, min(limite, 12))], "total": total}
         if aviso:
             result["aviso"] = aviso
         return result

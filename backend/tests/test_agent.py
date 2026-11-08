@@ -64,3 +64,22 @@ def test_pedido_verificado_pela_api(store):
     out = run(agent, "Pedido #8", verificacoes={"8": verificacao})
     tool_msg = next(m for m in out["messages"] if isinstance(m, ToolMessage))
     assert json.loads(tool_msg.content)["pedido"]["rastreio"] == "BRJL5544332BR"
+
+
+def test_resultado_da_ferramenta_lembra_o_idioma_da_resposta(store):
+    # depois de uma ferramenta (dados em português) o modelo tendia a responder em português
+    model = ScriptedModel(script=[tool_call("status_loja"), AIMessage("We're open!")])
+    agent = build_agent(model, Ferramentas(store), InMemorySaver())
+    out = run(agent, "are you open?", idioma="en")
+    tool_msg = next(m for m in out["messages"] if isinstance(m, ToolMessage))
+    saida = json.loads(tool_msg.content)
+    assert saida["aberta"] in (True, False)
+    assert "inglês" in saida["responder_em"]
+
+
+def test_sem_idioma_detectado_nao_mexe_na_ferramenta(store):
+    model = ScriptedModel(script=[tool_call("status_loja"), AIMessage("Oi!")])
+    agent = build_agent(model, Ferramentas(store), InMemorySaver())
+    out = run(agent, "ok")
+    tool_msg = next(m for m in out["messages"] if isinstance(m, ToolMessage))
+    assert "responder_em" not in json.loads(tool_msg.content)

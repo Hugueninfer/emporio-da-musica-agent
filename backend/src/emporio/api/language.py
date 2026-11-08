@@ -10,12 +10,16 @@ PT = set(
     "o a os as um uma de do da dos das que para pra com não nao é e vocês voces você voce tem têm qual quais "
     "quanto quero queria meu minha meus no na nos nas por favor obrigado obrigada oi olá ola tudo bem como "
     "onde quando posso pode loja preço preco violão violao comprar está esta estão estao agora aberto abertos "
-    "aberta ainda também tambem mais muito isso aqui vai foi sim ser ter".split()
+    "aberta ainda também tambem mais muito isso aqui vai foi sim ser ter vc vcs pq tb tbm fala falar falam "
+    "português portugues portuges ajuda ajudar mostra mostrar me quanto custa barato barata instrumento "
+    "procurando preciso gostaria gosto ukulele guitarra teclado bateria baixo".split()
 )
 EN = set(
     "the a an of to and is are do does you your have has what which how much many i i'm my me want would "
     "like can could please thanks thank hi hello there where when store price guitar buy any under with "
-    "for it this that what's it's don't i'd we're open now right return policy".split()
+    "for it this that what's it's don't i'd we're open now right return policy help find show need looking "
+    "instrument instruments know tell cost cheap cheapest best recommend speak english hey yes no thanks "
+    "ukuleles guitars drums keyboard keyboards bass deals".split()
 )
 
 

@@ -43,6 +43,9 @@ de desconto ou parcela você mesma: use `calcular_pagamento`.
 | Qualquer coisa sobre um pedido específico | `solicitar_verificacao` → `consultar_pedido` |
 
 # Produtos
+- Categorias do catálogo (manual, seção 1): violões, guitarras, baixos, baterias e percussão, teclados e
+  pianos, ukuleles, sopros (madeiras e metais) e cordas orquestrais. Modelos, preços e estoque só pela
+  ferramenta.
 - Os resultados de `buscar_produtos` e `buscar_promocoes` aparecem para o cliente como **cards** com
   foto, preço, estoque e ficha técnica. Não repita a lista inteira nem a ficha: comente em 1–2 frases o
   que diferencia as opções e recomende conforme o que o cliente contou (nível, estilo, orçamento).
@@ -115,8 +118,21 @@ def turn_context(now: datetime, locale: str, customer_language: str | None = Non
     language = customer_language or locale
     if language == "en":
         today = f"today is {EN_WEEKDAYS[now.weekday()]}, {now:%m/%d/%Y} (Campo Grande, Brazil)"
-        how = "the customer wrote in English" if customer_language else "the page is in English"
-        return f"[System context: {today}; {how}: reply and write the suggestions in English.]"
+        if customer_language:
+            return (
+                f"[System context: {today}; the customer wrote in English: reply and write the suggestions in English.]"
+            )
+        return (
+            f"[System context: {today}; reply in the language of the customer's last message "
+            "(if it's unclear, the page is in English).]"
+        )
     today = f"hoje é {WEEKDAYS[now.weekday()]}, {now:%d/%m/%Y} (Campo Grande)"
-    how = "o cliente escreveu em português" if customer_language else "a página está em português"
-    return f"[Contexto do sistema: {today}; {how}: responda e escreva as sugestões em português.]"
+    if customer_language:
+        return (
+            f"[Contexto do sistema: {today}; o cliente escreveu em português: "
+            "responda e escreva as sugestões em português.]"
+        )
+    return (
+        f"[Contexto do sistema: {today}; responda no idioma da última mensagem do cliente "
+        "(se não der para saber, a página está em português).]"
+    )

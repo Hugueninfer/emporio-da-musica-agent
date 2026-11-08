@@ -135,7 +135,7 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
             messages += history_seed(req)
         messages.append(HumanMessage(text))
 
-        inputs: dict = {"messages": messages}
+        inputs: dict = {"messages": messages, "idioma": detect_language(last_text(req))}
         if verificacoes:
             inputs["verificacoes"] = verificacoes
 

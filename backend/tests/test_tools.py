@@ -75,6 +75,14 @@ class TestBuscarProdutos:
         r = f.buscar_produtos(categoria="pedais")
         assert r["total"] == 0 and "só instrumentos" in r["aviso"]
 
+    def test_sem_filtro_mostra_uma_opcao_por_categoria(self, f):
+        # pedido vago ("me ajuda a achar um instrumento"): variedade em vez de só os mais baratos
+        r = f.buscar_produtos()
+        categorias = [p["category"] for p in r["produtos"]]
+        assert len(categorias) == len(set(categorias)) == 6
+        assert all(p["stock"] > 0 and p["status"] == "active" for p in r["produtos"])
+        assert "uma opção de cada categoria" in r["aviso"]
+
     def test_limite(self, f):
         r = f.buscar_produtos(categoria="ukuleles", limite=3)
         assert len(r["produtos"]) == 3 and r["total"] > 3
