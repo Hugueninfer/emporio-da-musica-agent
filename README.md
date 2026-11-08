@@ -12,7 +12,7 @@ consulta o manual quando a dúvida é de **política**, e recusa com educação 
 - **API:** FastAPI falando o protocolo de stream do Vercel AI SDK. **MCP:** as mesmas ferramentas
   expostas para qualquer cliente MCP.
 - **Qualidade medida:** avaliação automática com 43 casos (checagens determinísticas + LLM-as-judge),
-  117 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
+  119 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
 - **Front (extra):** site + chat em Next.js que renderiza as chamadas de ferramenta como interface
   (cards de produto, card do pedido, fonte do manual, formulário de verificação).
 
@@ -80,7 +80,7 @@ Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (portugu�
 
 ```bash
 cd backend
-uv run pytest                            # 117 testes, sem chamar a API da Anthropic (roda no CI)
+uv run pytest                            # 119 testes, sem chamar a API da Anthropic (roda no CI)
 uv run python -m evals.run               # avaliação com o modelo real (~R$ 2,50, ~1 min)
 uv run python scripts/run_examples.py    # regenera examples/*.md com o modelo real
 uv run python -m emporio.mcp_server      # servidor MCP (stdio); --http para streamable HTTP
@@ -272,7 +272,6 @@ Gerados com o modelo real por `backend/scripts/run_examples.py`, com o relógio 
 - **Data de entrega real não existe nos dados**; prazos de arrependimento usam a data prevista.
 - **Sem carrinho nem checkout reais.** O botão "adicionar" do site é demonstrativo.
 - **Reclamações não são registradas** em sistema; a Clave acolhe e encaminha para os contatos da loja.
-- **Retentativa de uma resposta** que falhou repete a mensagem do cliente no histórico do servidor.
 - **A avaliação usa o mesmo modelo como juiz** (risco de viés a favor das próprias respostas) e 37 casos
   ainda são poucos; as checagens determinísticas existem justamente para não depender só do juiz.
 - **Detecção de idioma é heurística** e só distingue português e inglês.

@@ -12,7 +12,7 @@ from typing import Any, Literal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, RemoveMessage
 from pydantic import BaseModel, Field
 
 from emporio import config
@@ -43,6 +43,8 @@ class ChatRequest(BaseModel):
     messages: list[UIMessage]
     locale: Literal["pt", "en"] = "pt"
     verificacao: Verificacao | None = None
+    # "regenerate-message" quando o cliente clica em "Tentar novamente"
+    trigger: str | None = None
 
 
 def text_of(message: UIMessage) -> str:
@@ -88,6 +90,18 @@ def history_seed(req: ChatRequest) -> list[BaseMessage]:
     return seed
 
 
+async def drop_retried_turn(graph, cfg: dict, user_text: str) -> None:
+    """Retentativa: o turno que falhou (mensagem do cliente + o que veio depois) sai do histórico,
+    para a mensagem não ficar duplicada. Só mexe se o último turno salvo for mesmo essa mensagem —
+    se a falha foi antes de o servidor salvar, não há o que tirar."""
+    state = await graph.aget_state(cfg)
+    msgs = state.values.get("messages", []) if state else []
+    last_human = next((i for i in range(len(msgs) - 1, -1, -1) if isinstance(msgs[i], HumanMessage)), None)
+    if last_human is None or not str(msgs[last_human].content).startswith(redact(user_text)):
+        return
+    await graph.aupdate_state(cfg, {"messages": [RemoveMessage(id=m.id) for m in msgs[last_human:]]})
+
+
 def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: MetricsLog | None = None) -> FastAPI:
     """`agent`/`ferramentas`/`metrics` podem ser injetados nos testes; em produção são criados no startup."""
 
@@ -128,6 +142,9 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
         graph = app.state.agent
         text, verificacoes = prepare_turn(req, app.state.ferramentas)
         cfg = {"configurable": {"thread_id": req.id}, "recursion_limit": 25}
+
+        if req.trigger == "regenerate-message":
+            await drop_retried_turn(graph, cfg, last_text(req))
 
         messages: list[BaseMessage] = []
         state = await graph.aget_state(cfg)

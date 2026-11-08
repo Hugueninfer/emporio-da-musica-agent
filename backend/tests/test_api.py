@@ -126,3 +126,27 @@ def test_contexto_vai_na_mensagem_do_cliente(setup):
     human = [m for m in model.calls[0] if isinstance(m, HumanMessage)][-1].content
     assert human.startswith("Do you sell ukuleles?")
     assert "[System context:" in human and "the customer wrote in English" in human
+
+
+def test_tentar_novamente_nao_duplica_a_mensagem(setup):
+    # 1ª tentativa falha (script vazio → erro); a retentativa refaz o turno sem repetir o pedido
+    client, model = setup()
+    body = {"id": "c7", "messages": [ui("user", "tem ukulele?")]}
+    with client:
+        primeira = events(client.post("/api/chat", json=body))
+        assert any(isinstance(e, dict) and e["type"] == "error" for e in primeira)
+        model.script.append(AIMessage("Tem sim!"))
+        client.post("/api/chat", json=body | {"trigger": "regenerate-message"})
+    humanos = [m for m in model.calls[-1] if isinstance(m, HumanMessage)]
+    assert len(humanos) == 1 and humanos[0].content.startswith("tem ukulele?")
+
+
+def test_tentar_novamente_nao_apaga_turno_anterior(setup):
+    # se a falha foi antes de o servidor salvar a mensagem, a retentativa não mexe no turno anterior
+    client, model = setup(AIMessage("Oi!"), AIMessage("Tem sim!"))
+    with client:
+        client.post("/api/chat", json={"id": "c8", "messages": [ui("user", "oi", "1")]})
+        msgs = [ui("user", "oi", "1"), ui("assistant", "Oi!", "2"), ui("user", "tem ukulele?", "3")]
+        client.post("/api/chat", json={"id": "c8", "messages": msgs, "trigger": "regenerate-message"})
+    humanos = [m.content for m in model.calls[-1] if isinstance(m, HumanMessage)]
+    assert len(humanos) == 2 and humanos[0].startswith("oi") and humanos[1].startswith("tem ukulele?")
