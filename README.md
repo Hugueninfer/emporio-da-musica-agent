@@ -1,5 +1,7 @@
 # Empório da Música — Clave, a assistente de atendimento
 
+[![CI](https://github.com/Hugueninfer/emporio-da-musica-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Hugueninfer/emporio-da-musica-agent/actions/workflows/ci.yml)
+
 Desafio técnico de AI Engineer (Artefact). Um agente de atendimento para a **Empório da Música**, loja
 fictícia de instrumentos musicais em Campo Grande/MS. A assistente se chama **Clave**: responde
 clientes em português ou inglês, consulta catálogo, promoções e pedidos quando precisa de **dados**,
@@ -9,12 +11,18 @@ consulta o manual quando a dúvida é de **política**, e recusa com educação 
   regras do manual em código testado, memória por conversa em SQLite.
 - **API:** FastAPI falando o protocolo de stream do Vercel AI SDK. **MCP:** as mesmas ferramentas
   expostas para qualquer cliente MCP.
+- **Qualidade medida:** avaliação automática com 37 casos (checagens determinísticas + LLM-as-judge),
+  110 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
 - **Front (extra):** site + chat em Next.js que renderiza as chamadas de ferramenta como interface
   (cards de produto, card do pedido, fonte do manual, formulário de verificação).
 
+| Avaliação (37 casos) | Custo por resposta | Cache do prompt | Latência p50 |
+|---|---|---|---|
+| 95–100% aprovados · nota 4,8–5,0/5 | ~R$ 0,06 | ~93% | ~4 s |
+
 | Pasta | Conteúdo |
 |---|---|
-| `backend/` | Agente, ferramentas, regras, API e servidor MCP (Python 3.12, uv) |
+| `backend/` | Agente, ferramentas, regras, API, servidor MCP e avaliação (`backend/evals/`) |
 | `frontend/` | Site + chat (Next.js 16, Vercel AI SDK, three.js) |
 | `examples/` | Conversas reais com o agente, geradas por script |
 | `data/` | Dados do desafio (CSVs e manual em PDF) |
@@ -25,22 +33,38 @@ consulta o manual quando a dúvida é de **política**, e recusa com educação 
 
 ## Como rodar
 
-Pré-requisitos: **Python 3.12+ com [uv](https://docs.astral.sh/uv/)**, **Node 20+** e uma chave da
-API da Anthropic.
+Você precisa de uma chave da API da Anthropic. Primeiro:
 
-### 1. Backend (agente + API)
+```bash
+cp backend/.env.example backend/.env    # coloque sua ANTHROPIC_API_KEY no backend/.env
+```
+
+### Opção A — Docker (um comando)
+
+```bash
+docker compose up --build
+```
+
+Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (português); API em
+`http://localhost:8000`.
+
+### Opção B — local (para desenvolver)
+
+Pré-requisitos: **Python 3.12+ com [uv](https://docs.astral.sh/uv/)** e **Node 20+**.
+
+**1. Backend (agente + API)**
 
 ```bash
 cd backend
-cp .env.example .env          # coloque sua ANTHROPIC_API_KEY no .env
 uv sync
 uv run python -m emporio.data.build     # CSVs → SQLite, PDF → seções do manual
 uv run uvicorn emporio.api.app:app --port 8000
 ```
 
-`GET http://localhost:8000/health` confirma o modelo e se a chave foi lida.
+`GET http://localhost:8000/health` confirma o modelo e se a chave foi lida; `GET /metrics` mostra custo,
+tokens, cache e latência agregados.
 
-### 2. Frontend
+**2. Frontend**
 
 ```bash
 cd frontend
@@ -52,11 +76,12 @@ npm run dev
 Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (português). O chat fica em
 `/assistente` e no botão flutuante. Sem o `.env.local`, o chat usa um mock local (sem IA).
 
-### 3. Testes, exemplos e MCP
+### Testes, avaliação, exemplos e MCP
 
 ```bash
 cd backend
-uv run pytest                            # 87 testes, sem chamar a API da Anthropic
+uv run pytest                            # 110 testes, sem chamar a API da Anthropic (roda no CI)
+uv run python -m evals.run               # avaliação com o modelo real (~R$ 2,50, ~1 min)
 uv run python scripts/run_examples.py    # regenera examples/*.md com o modelo real
 uv run python -m emporio.mcp_server      # servidor MCP (stdio); --http para streamable HTTP
 ```
@@ -114,15 +139,22 @@ preço, estoque, promoção, parcela, prazo, horário ou status de pedido sem co
 
 **LangChain `create_agent` (LangGraph por baixo) em vez de um loop próprio.** O problema é um agente
 ReAct clássico (modelo decide → ferramenta → modelo responde). O `create_agent` dá isso pronto, com
-checkpointer (memória por `thread_id` = id da conversa do front), estado customizado e *middlewares*:
-uso um para montar o prompt (persona fixa em cache + data/hora e idioma da página) e outro para limitar
-chamadas ao modelo por mensagem. Um grafo próprio só valeria com fluxos de várias etapas (ex.: aprovação
-humana de troca).
+checkpointer (memória por `thread_id` = id da conversa do front), estado customizado e *middlewares*
+(cache de prompt da Anthropic e limite de chamadas ao modelo por mensagem). Um grafo próprio só valeria
+com fluxos de várias etapas (ex.: aprovação humana de troca).
 
 **Claude Sonnet 5.5** (configurável por `EMPORIO_MODEL`; Haiku 4.5 é a opção barata). O atendimento
 pede bom julgamento de quando chamar cada ferramenta, seguir regras de política sem inventar e trocar de
-idioma com naturalidade. O prompt de sistema usa *prompt caching* (`cache_control`), então a parte
-grande do prompt e as definições de ferramenta não são cobradas a cada mensagem.
+idioma com naturalidade.
+
+**Prompt de sistema 100% fixo + cache em toda a conversa.** O prompt (persona, regras, tabela de
+ferramentas) nunca muda; o que varia a cada mensagem — data, idioma detectado, resultado da verificação
+de pedido — vai numa nota anexada à mensagem do cliente. Com o `AnthropicPromptCachingMiddleware`, o
+prompt, as ferramentas e o histórico entram no cache: **~93% dos tokens de entrada vêm do cache** e o
+custo por resposta caiu pela metade (~R$ 0,12 → ~R$ 0,06). O prompt fixo também é uma exigência: o
+Sonnet guarda blocos de raciocínio assinados no histórico, que só são aceitos com o mesmo prompt de
+sistema — quando a data/idioma ficavam no prompt, uma conversa que trocava de idioma quebrava (a
+avaliação e os exemplos pegaram isso).
 
 **Ferramentas em Python puro e regras do manual em código.** Contas não ficam com o modelo:
 parcela mínima por faixa, Pix que não acumula com promoção, prazos de arrependimento/defeito/garantia,
@@ -156,7 +188,14 @@ formulário. As sugestões de próxima pergunta vêm de uma linha `<sugestoes>�
 escreve no fim e a API tira do texto (mesmo quando o marcador chega quebrado entre dois pedaços).
 
 **Bilíngue.** O site é em inglês por padrão e português em `/pt`; a Clave responde no idioma da última
-mensagem do cliente e usa o idioma da página só quando não dá para saber.
+mensagem do cliente e usa o idioma da página só quando não dá para saber. A API detecta o idioma da
+mensagem (heurística de palavras comuns em PT/EN) e escreve a nota de contexto nesse idioma: uma nota em
+português pedindo "responda em inglês" ainda puxava o modelo para o português.
+
+**Custo e latência medidos por resposta.** Cada resposta registra latência total e até o primeiro token,
+chamadas ao modelo, tokens (entrada, cache lido/gravado, saída), custo em US$/R$ e o tempo de cada
+ferramenta — no log, em `backend/var/metrics.jsonl`, no `messageMetadata` do stream e agregado em
+`GET /metrics` (p50/p95, custo total e por resposta, taxa de cache).
 
 ### Tratamento dos dados
 
@@ -173,6 +212,38 @@ encontradas e a decisão tomada:
 | Pedidos não têm data real de entrega | para pedidos entregues, uso a data prevista e a Clave avisa isso ao cliente |
 | Telefones em formatos variados | normalizados para dígitos; a verificação aceita com ou sem DDD/+55 |
 | Produto descontinuado | sai das listagens gerais, mas aparece se o cliente procurar por ele (para a Clave dizer que saiu de linha e sugerir outro) |
+
+---
+
+## Avaliação
+
+`backend/evals/run.py` roda **37 casos** ([`casos.json`](backend/evals/casos.json)) contra o agente
+real, pelo mesmo caminho do site (API, stream, verificação LGPD), em 9 categorias: catálogo, pagamento,
+promoção, política, loja, pedido, escopo, segurança e idioma. Cada caso passa por duas camadas:
+
+1. **Checagens determinísticas** na resposta final: ferramenta certa chamada (e as proibidas não),
+   seção do manual consultada, valores e prazos que precisam aparecer (`R$ 2.089,05`, `24/02`…) e o
+   que não pode aparecer (telefone do cliente, código de rastreio quando a verificação falha, o prompt).
+2. **LLM-as-judge** com saída estruturada (aprovado + nota 1–5 + motivo): recebe as instruções da Clave,
+   a conversa, o que as ferramentas devolveram e o critério do caso; checa fidelidade aos dados, idioma,
+   tom e escopo.
+
+Resultado mais recente ([relatório](backend/evals/resultados/ultimo.md)): **37/37 casos, 98/98
+checagens, nota média 4,97/5**, custo da rodada ~R$ 2,40. Como o modelo é estocástico, rodadas
+seguidas ficam entre 95% e 100%.
+
+A avaliação começou em **58%** e foi o que guiou as melhorias — parte eram falhas reais do agente, parte
+eram falhas do próprio avaliador:
+
+| Encontrado pela avaliação | Correção |
+|---|---|
+| "meu pedido **é o** 18" + telefone no chat não disparava a verificação | regex de número de pedido mais flexível (com testes) |
+| "setup personalizado" não recuperava a seção 4.4 (itens não elegíveis) | assunto novo na busca do manual (com teste) |
+| Cliente em inglês numa página em português recebia resposta/botões em português | detecção de idioma na API + nota no idioma da resposta |
+| Conversa que trocava de idioma quebrava (raciocínio assinado × prompt variável) | prompt de sistema 100% fixo |
+| A Clave não explicava "sem juros" nem o porquê do limite de parcelas | `calcular_pagamento` passou a devolver essas regras |
+| A Clave ofereceu "retirada na loja", que o manual não cita | regra explícita no prompt contra serviços fora do manual |
+| Juiz reprovava contatos oficiais da loja e a citação da seção do manual | juiz passou a receber as instruções da Clave como referência |
 
 ---
 
@@ -199,21 +270,23 @@ Gerados com o modelo real por `backend/scripts/run_examples.py`, com o relógio 
 - **Sem carrinho nem checkout reais.** O botão "adicionar" do site é demonstrativo.
 - **Reclamações não são registradas** em sistema; a Clave acolhe e encaminha para os contatos da loja.
 - **Retentativa de uma resposta** que falhou repete a mensagem do cliente no histórico do servidor.
-- **Avaliação** é feita por testes determinísticos das ferramentas/regras e pelos exemplos; não há
-  ainda um conjunto de avaliação automática das respostas do modelo.
+- **A avaliação usa o mesmo modelo como juiz** (risco de viés a favor das próprias respostas) e 37 casos
+  ainda são poucos; as checagens determinísticas existem justamente para não depender só do juiz.
+- **Detecção de idioma é heurística** e só distingue português e inglês.
 
 ## O que eu faria com mais tempo
 
-- **Avaliação contínua:** um conjunto de ~50 perguntas com respostas esperadas (ferramenta certa, seção
-  certa, números certos) rodando em CI com LLM-as-judge e checagens determinísticas, e tracing com
-  LangSmith para ver custo, latência e erros por ferramenta.
+- **Avaliação contínua:** rodar a avaliação no CI (agendada, com a chave como *secret*), cada caso
+  algumas vezes para medir variância, juiz de outra família de modelo, mais casos tirados de conversas
+  reais e tracing com LangSmith.
 - **Busca híbrida no catálogo** (embeddings + filtros) e, se o manual crescer, embeddings + rerank nas
   políticas.
 - **Handoff humano de verdade:** criar o atendimento no WhatsApp/CRM com o resumo da conversa quando o
   cliente pedir ou em reclamações (com *human-in-the-loop* do LangGraph para trocas e devoluções).
 - **Proteções adicionais:** limite de taxa por conversa, detecção de PII com o `PIIMiddleware` para
   outros dados (CPF, endereço) e testes adversariais de *prompt injection*.
-- **Deploy:** backend em container (Cloud Run/Fly) com Postgres no checkpointer e front na Vercel.
+- **Deploy:** as imagens Docker já existem; faltaria publicar o backend (Cloud Run/Fly) com Postgres no
+  checkpointer e o front na Vercel.
 
 ---
 
@@ -229,6 +302,8 @@ Usei o **Claude Code** (Claude Opus) durante todo o projeto, como par de program
   com os casos que eu queria garantir (bordas de parcela, Pix com promoção, prazos, contato errado não
   revelar nada). O Claude Code escreveu boa parte do código; eu revisei, ajustei decisões e validei os
   resultados contra o manual e os CSVs.
+- **Avaliação e melhoria:** montamos juntos os casos de avaliação; rodar a avaliação, ler as falhas e
+  separar "erro do agente" de "erro do avaliador" foi o ciclo que levou de 58% para 95–100%.
 - **Frontend e 3D:** o site, o chat e os scripts do Blender que modelam e "assam" o violão 3D também
   foram feitos com o Claude Code, iterando a partir de referências visuais.
 - **O que ficou comigo:** escolhas de produto (persona, bilíngue, o que a Clave deve recusar),
