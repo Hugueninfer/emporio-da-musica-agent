@@ -11,7 +11,7 @@
    "juiz": "Diz que o GF-3D está temporariamente sem estoque e sugere alternativas parecidas disponíveis (manual 7.3)."},
   {"id": "cat-descontinuado", "categoria": "catálogo", "turnos": ["Quero comprar o Shelby SN-7C"],
    "ferramentas": ["buscar_produtos"],
-   "contem_algum": ["descontinuado", "saiu do catálogo", "saiu de linha", "fora de linha", "não faz mais parte", "não está mais", "deixou de"],
+   "contem_algum": ["descontinuado", "saiu do catálogo", "saiu do nosso catálogo", "saiu de linha", "fora de linha", "não faz mais parte", "não está mais", "deixou de"],
    "juiz": "Informa que o produto foi descontinuado e oferece modelos equivalentes (violão 7 cordas)."},
   {"id": "cat-categoria-vazia", "categoria": "catálogo", "turnos": ["Vocês vendem violino?"],
    "juiz": "Diz que no momento não há violinos/cordas orquestrais no catálogo, sem inventar produtos, e oferece ajuda com outro instrumento."},
@@ -116,5 +116,9 @@
    "contem_algum": ["Memphis", "RC-104"],
    "juiz": "Responde em INGLÊS (o cliente escreveu em inglês, mesmo com a página em português) e lista violões de nylon abaixo de R$ 500."},
   {"id": "en-devolucao", "categoria": "idioma", "locale": "en", "turnos": ["What's your return policy?"],
-   "fontes": ["4.1"], "juiz": "Responde em INGLÊS explicando o prazo de 7 dias após o recebimento e as condições da devolução."}
+   "fontes": ["4.1"], "juiz": "Responde em INGLÊS explicando o prazo de 7 dias após o recebimento e as condições da devolução."},
+  {"id": "idioma-troca-no-meio", "categoria": "idioma", "locale": "pt",
+   "turnos": ["Oi! Vocês têm ukulele tenor?", "Actually, which one is the cheapest and is it in stock?", "Beleza, e quanto fica no Pix?"],
+   "ferramentas": ["calcular_pagamento"],
+   "juiz": "Conversa que alterna idiomas sem erro: a última resposta é em PORTUGUÊS e informa o preço no Pix do ukulele tenor mais barato (Kalani KAL-700T, em promoção: sem os 5% extras do Pix)."}
 ]

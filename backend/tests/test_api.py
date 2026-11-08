@@ -109,10 +109,20 @@ def test_recupera_historico_quando_servidor_nao_conhece_a_conversa(setup):
             },
         )
     textos = [m.content for m in model.calls[0][1:]]
-    assert textos == ["quero um violão", "Pra qual estilo?", "folk"]
+    assert textos[:2] == ["quero um violão", "Pra qual estilo?"]
+    assert textos[2].startswith("folk")
 
 
 def test_health(setup):
     client, _ = setup()
     with client:
         assert client.get("/health").json()["ok"] is True
+
+
+def test_contexto_vai_na_mensagem_do_cliente(setup):
+    client, model = setup(AIMessage("Hi!"))
+    with client:
+        client.post("/api/chat", json={"id": "c6", "locale": "pt", "messages": [ui("user", "Do you sell ukuleles?")]})
+    human = [m for m in model.calls[0] if isinstance(m, HumanMessage)][-1].content
+    assert human.startswith("Do you sell ukuleles?")
+    assert "[System context:" in human and "the customer wrote in English" in human

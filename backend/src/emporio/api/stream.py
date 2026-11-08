@@ -91,7 +91,7 @@ def _json(content: Any) -> Any:
 
 
 async def ui_message_stream(
-    agent, inputs: dict, config: dict, context: Any, metrics: TurnMetrics | None = None
+    agent, inputs: dict, config: dict, metrics: TurnMetrics | None = None
 ) -> AsyncIterator[dict]:
     """Roda o agente e devolve os chunks do protocolo (dicts), do `start` ao `finish`.
 
@@ -122,7 +122,7 @@ async def ui_message_stream(
             text_id = None
 
     try:
-        async for mode, payload in agent.astream(inputs, config, context=context, stream_mode=["messages", "updates"]):
+        async for mode, payload in agent.astream(inputs, config, stream_mode=["messages", "updates"]):
             if mode == "messages":
                 msg, meta = payload
                 if isinstance(msg, AIMessage) and meta.get("langgraph_node") == "model":

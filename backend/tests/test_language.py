@@ -1,6 +1,6 @@
 import pytest
 
-from emporio.agent.prompt import context_block
+from emporio.agent.prompt import turn_context
 from emporio.api.language import detect_language
 from emporio.config import now
 
@@ -24,5 +24,8 @@ def test_detecta_idioma(texto, idioma):
 
 
 def test_contexto_diz_o_idioma_do_cliente():
-    assert "inglês" in context_block(now(), "pt", "en")
-    assert "Idioma da página: português" in context_block(now(), "pt", None)
+    # a nota vai no idioma da resposta, para não puxar o modelo para o outro idioma
+    assert turn_context(now(), "pt", "en").startswith("[System context:")
+    assert "the customer wrote in English" in turn_context(now(), "pt", "en")
+    assert "a página está em português" in turn_context(now(), "pt", None)
+    assert "the page is in English" in turn_context(now(), "en", None)

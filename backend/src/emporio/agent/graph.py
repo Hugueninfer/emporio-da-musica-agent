@@ -1,10 +1,9 @@
 """O agente: `create_agent` do LangChain (grafo LangGraph) com Claude e as ferramentas da loja."""
 
-from dataclasses import dataclass
 from typing import Annotated
 
 from langchain.agents import AgentState, create_agent
-from langchain.agents.middleware import ModelCallLimitMiddleware, ModelRequest, dynamic_prompt
+from langchain.agents.middleware import ModelCallLimitMiddleware
 from langchain_anthropic.middleware import AnthropicPromptCachingMiddleware
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import SystemMessage
@@ -12,7 +11,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 
 from emporio import config
-from emporio.agent.prompt import SYSTEM_PROMPT, context_block
+from emporio.agent.prompt import SYSTEM_PROMPT
 from emporio.agent.tools import build_tools
 from emporio.tools import Ferramentas
 
@@ -26,24 +25,11 @@ class ClaveState(AgentState):
     verificacoes: Annotated[dict, _merge]
 
 
-@dataclass
-class ClaveContext:
-    """Dados da requisição que não fazem parte da conversa."""
-
-    locale: str = "pt"
-    customer_language: str | None = None  # detectado na última mensagem (pt/en), se der
-
-
-@dynamic_prompt
-def clave_prompt(request: ModelRequest) -> SystemMessage:
-    """Persona fixa (em cache) + data e idioma da página."""
-    ctx = request.runtime.context or ClaveContext()
-    return SystemMessage(
-        content=[
-            {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}},
-            {"type": "text", "text": context_block(config.now(), ctx.locale, ctx.customer_language)},
-        ]
-    )
+# Prompt de sistema 100% fixo: (1) o cache da Anthropic reaproveita o prefixo inteiro em todas as
+# conversas e (2) os blocos de raciocínio assinados que ficam no histórico continuam válidos — eles
+# só valem com o mesmo prompt de sistema. O que muda a cada mensagem (data, idioma, verificação) vai
+# junto da mensagem do cliente (ver emporio.api.app.prepare_turn).
+SYSTEM = SystemMessage(content=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}])
 
 
 def default_model() -> BaseChatModel:
@@ -60,14 +46,13 @@ def build_agent(
     return create_agent(
         model or default_model(),
         build_tools(ferramentas or Ferramentas()),
+        system_prompt=SYSTEM,
         middleware=[
-            clave_prompt,
             # cache também nas ferramentas e no histórico da conversa (até 4 pontos de cache por chamada)
             AnthropicPromptCachingMiddleware(unsupported_model_behavior="ignore"),
             ModelCallLimitMiddleware(run_limit=8, exit_behavior="end"),
         ],
         state_schema=ClaveState,
-        context_schema=ClaveContext,
         checkpointer=checkpointer,
         name="clave",
     )

@@ -3,7 +3,7 @@ import asyncio
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
-from emporio.agent.graph import ClaveContext, build_agent
+from emporio.agent.graph import build_agent
 from emporio.api.stream import SuggestionFilter, ui_message_stream
 from emporio.tools import Ferramentas
 from tests.fakes import ScriptedModel, tool_call
@@ -13,7 +13,7 @@ def collect(agent, text="oi"):
     async def go():
         cfg = {"configurable": {"thread_id": "s1"}}
         inputs = {"messages": [HumanMessage(text)]}
-        return [c async for c in ui_message_stream(agent, inputs, cfg, ClaveContext())]
+        return [c async for c in ui_message_stream(agent, inputs, cfg)]
 
     return asyncio.run(go())
 

@@ -16,7 +16,8 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from pydantic import BaseModel, Field
 
 from emporio import config
-from emporio.agent.graph import ClaveContext, build_agent
+from emporio.agent.graph import build_agent
+from emporio.agent.prompt import turn_context
 from emporio.api.language import detect_language
 from emporio.api.privacy import find_verification, redact
 from emporio.api.stream import HEADERS, sse, ui_message_stream
@@ -60,8 +61,9 @@ def verification_note(numero: str, result: dict) -> str:
 
 
 def prepare_turn(req: ChatRequest, ferramentas: Ferramentas) -> tuple[str, dict]:
-    """Texto da vez para o modelo (sem contato) e as verificações feitas pela API."""
+    """Texto da vez para o modelo (sem contato, com as notas do sistema) e as verificações feitas pela API."""
     text = last_text(req)
+    context = turn_context(config.now(), req.locale, detect_language(text))
     dados = req.verificacao.model_dump() if req.verificacao else find_verification(text)
     verificacoes: dict = {}
     if dados:
@@ -71,7 +73,7 @@ def prepare_turn(req: ChatRequest, ferramentas: Ferramentas) -> tuple[str, dict]
         text = f"{redact(text)}\n\n{verification_note(numero, result)}"
     else:
         text = redact(text)
-    return text, verificacoes
+    return f"{text}\n\n{context}", verificacoes
 
 
 def history_seed(req: ChatRequest) -> list[BaseMessage]:
@@ -140,8 +142,7 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
         turn = TurnMetrics(model=config.MODEL, thread_id=req.id)
 
         async def body():
-            context = ClaveContext(locale=req.locale, customer_language=detect_language(last_text(req)))
-            async for chunk in ui_message_stream(graph, inputs, cfg, context, turn):
+            async for chunk in ui_message_stream(graph, inputs, cfg, turn):
                 yield sse(chunk)
             yield sse("[DONE]")
             summary = turn.summary()

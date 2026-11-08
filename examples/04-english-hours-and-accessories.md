@@ -6,24 +6,29 @@
 
 > 🔧 `status_loja` `{}` → sexta-feira, 20/02/2026 15:00 · aberta até 18:00
 
-**Clave:** Hi! I'm Clave, the virtual assistant (an AI) for Empório da Música. 🎸
+**Clave:** Hi, I'm Clave, the store's virtual assistant (an AI). 🎸
 
-**Yes, we're open right now.** Today we close at **6:00 PM**. Our hours are Mon–Fri 9am–6pm and Sat 9am–1pm. We're closed on Sundays and holidays. You can find us at Rua 14 de Maio, 3200, Centro, Campo Grande/MS.
+**Yes, we're open right now.** Today we close at 6:00 PM. Our hours are:
+- Monday to Friday: 9 AM–6 PM
+- Saturday: 9 AM–1 PM
+- Sunday and holidays: closed
 
-We don't carry **strings or picks**, though. The store sells only musical instruments, so you'll need a accessories shop for those. I can help you pick out a guitar, acoustic guitar, bass, ukulele or keyboard if you're looking for one.
+We're at Rua 14 de Maio, 3200, in Centro, Campo Grande.
 
-*Sugestões:* Show me acoustic guitars · Show me electric guitars · Current promotions
+**We don't sell strings or picks.** The store only carries musical instruments, not accessories. A local accessories shop should have what you need. I can help you pick an instrument, though, like an acoustic guitar, an electric guitar or a bass.
+
+*Sugestões:* Show me acoustic guitars · I'm looking for an electric guitar · What's the payment policy?
 
 **Cliente:** Got it. What electric guitars do you have under R$ 8,000?
 
-> 🔧 `buscar_produtos` `{"categoria": "guitarras", "preco_max": 8000}` → Fender Telecaster Player Series (R$ 5.400,00, 15 em estoque); PRS SE Custom 24 (R$ 6.800,00, 12 em estoque); Ibanez RG550 Genesis Collection (R$ 7.500,00, 8 em estoque)
+> 🔧 `buscar_produtos` `{"categoria": "guitarras", "preco_max": 8000, "apenas_disponiveis": true}` → Fender Telecaster Player Series (R$ 5.400,00, 15 em estoque); PRS SE Custom 24 (R$ 6.800,00, 12 em estoque); Ibanez RG550 Genesis Collection (R$ 7.500,00, 8 em estoque)
 
-**Clave:** We have three electric guitars under R$ 8,000, and all of them are in stock:
+**Clave:** Here are three electric guitars under R$ 8,000 that are in stock:
 
-- **Fender Telecaster Player Series** has the classic Fender "twang". It's a good fit for country, blues, rock and pop, and it's the cheapest of the three.
-- **PRS SE Custom 24** has 24 frets and coil-split pickups, so it covers a lot of styles.
-- **Ibanez RG550 Genesis Collection** has a very fast neck and an Edge tremolo bridge. It's built for shred and metal.
+- **Fender Telecaster Player Series** (R$ 5,400): classic Fender "twang" and a good fit for country, rock and blues.
+- **PRS SE Custom 24** (R$ 6,800): the most versatile of the three. It has coil-split pickups and 24 frets.
+- **Ibanez RG550 Genesis Collection** (R$ 7,500): a fast neck and a tremolo bridge, built for shred and metal.
 
-What style do you play? I can narrow it down from there, or show you the payment options for one of them.
+What style do you play? That would help me narrow it down.
 
-*Sugestões:* Payment options for Telecaster · Best for metal · Best for blues
+*Sugestões:* I play rock and blues · I play metal · How can I pay for the Telecaster?
