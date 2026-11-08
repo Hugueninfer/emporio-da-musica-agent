@@ -1,346 +1,357 @@
-# Empório da Música — Clave, a assistente de atendimento
+# Empório da Música — Clave, the customer service assistant
 
 [![CI](https://github.com/Hugueninfer/emporio-da-musica-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Hugueninfer/emporio-da-musica-agent/actions/workflows/ci.yml)
 
-Desafio técnico de AI Engineer (Artefact). Um agente de atendimento para a **Empório da Música**, loja
-fictícia de instrumentos musicais em Campo Grande/MS. A assistente se chama **Clave**: responde
-clientes em português ou inglês, consulta catálogo, promoções e pedidos quando precisa de **dados**,
-consulta o manual quando a dúvida é de **política**, e recusa com educação o que foge do escopo.
+🇺🇸 **English** · 🇧🇷 [Português](README.pt-BR.md)
 
-**▶ Demo online:** [emporio-da-musica-murex.vercel.app](https://emporio-da-musica-murex.vercel.app) (inglês) ·
-[/pt](https://emporio-da-musica-murex.vercel.app/pt) (português) · chat em
-[/pt/assistente](https://emporio-da-musica-murex.vercel.app/pt/assistente).
-Backend no plano gratuito do Render: se ninguém usou nos últimos minutos, a primeira resposta pode levar
-até ~1 min enquanto o servidor acorda. Para testar a consulta de pedido, use o pedido **8** com o telefone
-**(67) 99654-7821** (dados fictícios do desafio).
+AI Engineer technical challenge (Artefact). A customer service agent for **Empório da Música**, a
+fictional musical instrument store in Campo Grande, Brazil. The assistant is called **Clave**: she
+answers customers in Portuguese or English, queries the catalog, promotions and orders when she needs
+**data**, checks the store manual when the question is about **policy**, and politely declines anything
+out of scope.
+
+**▶ Live demo:** [emporio-da-musica-murex.vercel.app](https://emporio-da-musica-murex.vercel.app) (English) ·
+[/pt](https://emporio-da-musica-murex.vercel.app/pt) (Portuguese) · chat at
+[/assistente](https://emporio-da-musica-murex.vercel.app/assistente).
+The backend runs on Render's free plan: if nobody has used it for a few minutes, the first reply can take
+up to ~1 min while the server wakes up. To try the order lookup, use order **8** with phone
+**(67) 99654-7821** (fictional data from the challenge).
 
 <p align="center">
-  <img src="docs/img/clave-demo.gif" width="560" alt="Conversa com a Clave: recomendação de violão com cards do catálogo, verificação de pedido pelo formulário (LGPD) e card do pedido com rastreio">
+  <img src="docs/img/clave-demo.gif" width="560" alt="Conversation with Clave: guitar recommendation with catalog cards, order verification through the privacy form, and the order card with tracking">
 </p>
 
-| Site (inglês, violão 3D) | Cliente em inglês numa página em português |
+| Website (English, 3D guitar) | English-speaking customer on the Portuguese page |
 |---|---|
-| ![Página inicial da Empório da Música com o violão em 3D](docs/img/site.png) | ![Clave respondendo em inglês sobre ukuleles em promoção](docs/img/chat-english.png) |
-| **Recomendação com cards do catálogo** | **Pedido verificado (LGPD) com rastreio e prazos** |
-| ![Clave recomendando violões folk até R$ 1.500 com cards](docs/img/chat-produtos.png) | ![Card do pedido #8 com código de rastreio e resposta da Clave](docs/img/chat-pedido.png) |
+| ![Empório da Música home page with the 3D guitar](docs/img/site.png) | ![Clave answering in English about ukuleles on sale](docs/img/chat-english.png) |
+| **Recommendation with catalog cards** | **Verified order (privacy flow) with tracking and deadlines** |
+| ![Clave recommending folk guitars up to R$ 1,500 with cards](docs/img/chat-produtos.png) | ![Order #8 card with tracking code and Clave's answer](docs/img/chat-pedido.png) |
 
-- **Agente (Python):** LangChain `create_agent` (grafo LangGraph) + Claude, ferramentas em Python puro,
-  regras do manual em código testado, memória por conversa em SQLite.
-- **API:** FastAPI falando o protocolo de stream do Vercel AI SDK. **MCP:** as mesmas ferramentas
-  expostas para qualquer cliente MCP.
-- **Qualidade medida:** avaliação automática com 43 casos (checagens determinísticas + LLM-as-judge),
-  127 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
-- **Front (extra):** site + chat em Next.js que renderiza as chamadas de ferramenta como interface
-  (cards de produto, card do pedido, fonte do manual, formulário de verificação).
+- **Agent (Python):** LangChain `create_agent` (a LangGraph graph) + Claude, tools in plain Python, the
+  manual's rules in tested code, per-conversation memory in SQLite.
+- **API:** FastAPI speaking the Vercel AI SDK stream protocol. **MCP:** the same tools exposed to any MCP
+  client.
+- **Measured quality:** automated evaluation with 43 cases (deterministic checks + LLM-as-judge),
+  127 tests, CI on GitHub Actions, and cost/latency/cache recorded for every reply.
+- **Frontend (extra):** website + chat in Next.js that renders tool calls as UI (product cards, order
+  card, manual source chip, verification form).
 
-| Avaliação (43 casos) | Custo por resposta | Cache do prompt | Latência p50 |
+| Evaluation (43 cases) | Cost per reply | Prompt cache | p50 latency |
 |---|---|---|---|
-| 95–100% aprovados · nota 4,8–5,0/5 | ~R$ 0,06 | ~93% | ~4 s |
+| 95–100% passed · score 4.8–5.0/5 | ~R$ 0.06 (~US$ 0.01) | ~93% | ~4 s |
 
-| Pasta | Conteúdo |
+| Folder | Contents |
 |---|---|
-| `backend/` | Agente, ferramentas, regras, API, servidor MCP e avaliação (`backend/evals/`) |
-| `frontend/` | Site + chat (Next.js 16, Vercel AI SDK, three.js) |
-| `examples/` | Conversas reais com o agente, geradas por script |
-| `data/` | Dados do desafio (CSVs e manual em PDF) |
-| `docs/` | Desenho do backend, plano de implementação e imagens do README |
-| `tools/blender/` | Scripts que modelam o violão/ukulele 3D do site |
+| `backend/` | Agent, tools, rules, API, MCP server and evaluation (`backend/evals/`) |
+| `frontend/` | Website + chat (Next.js 16, Vercel AI SDK, three.js) |
+| `examples/` | Real conversations with the agent, generated by a script |
+| `data/` | Challenge data (CSVs and the policy manual PDF) |
+| `docs/` | Backend design, implementation plan and README images |
+| `tools/blender/` | Scripts that model the website's 3D guitar/ukulele |
+
+> The store, its data and its manual are in Portuguese, so code identifiers, tool names, commit messages,
+> the example conversations and the evaluation cases are mostly in Portuguese. Clave herself answers in
+> the customer's language.
 
 ---
 
-## Como rodar
+## How to run
 
-Você precisa de uma chave da API da Anthropic. Primeiro:
+You need an Anthropic API key. First:
 
 ```bash
-cp backend/.env.example backend/.env    # coloque sua ANTHROPIC_API_KEY no backend/.env
+cp backend/.env.example backend/.env    # put your ANTHROPIC_API_KEY in backend/.env
 ```
 
-### Opção A — Docker (um comando)
+### Option A — Docker (one command)
 
 ```bash
 docker compose up --build
 ```
 
-Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (português); API em
+Website at `http://localhost:3000` (English) and `http://localhost:3000/pt` (Portuguese); API at
 `http://localhost:8000`.
 
-### Opção B — local (para desenvolver)
+### Option B — local (for development)
 
-Pré-requisitos: **Python 3.12+ com [uv](https://docs.astral.sh/uv/)** e **Node 20+**.
+Requirements: **Python 3.12+ with [uv](https://docs.astral.sh/uv/)** and **Node 20+**.
 
-**1. Backend (agente + API)**
+**1. Backend (agent + API)**
 
 ```bash
 cd backend
 uv sync
-uv run python -m emporio.data.build     # CSVs → SQLite, PDF → seções do manual
+uv run python -m emporio.data.build     # CSVs → SQLite, PDF → manual sections
 uv run uvicorn emporio.api.app:app --port 8000
 ```
 
-`GET http://localhost:8000/health` confirma o modelo e se a chave foi lida; `GET /metrics` mostra custo,
-tokens, cache e latência agregados.
+`GET http://localhost:8000/health` confirms the model and whether the key was loaded; `GET /metrics` shows
+aggregated cost, tokens, cache and latency.
 
 **2. Frontend**
 
 ```bash
 cd frontend
-cp .env.example .env.local    # aponta o chat para http://localhost:8000/api/chat
+cp .env.example .env.local    # points the chat to http://localhost:8000/api/chat
 npm install
 npm run dev
 ```
 
-Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (português). O chat fica em
-`/assistente` e no botão flutuante. Sem o `.env.local`, o chat usa um mock local (sem IA).
+Website at `http://localhost:3000` (English) and `http://localhost:3000/pt` (Portuguese). The chat lives at
+`/assistente` and in the floating button. Without `.env.local`, the chat uses a local mock (no AI).
 
-### Publicação (Render + Vercel)
+### Deployment (Render + Vercel)
 
-- **Backend:** Blueprint do Render a partir do [`render.yaml`](render.yaml) (plano gratuito, sem cartão),
-  usando o mesmo Dockerfile. A chave da Anthropic e `CORS_ORIGINS` (URL do front) ficam só no painel.
-  O plano gratuito dorme após 15 min sem uso; um monitor gratuito (UptimeRobot) chamando `/health` a
-  cada 10 min o mantém acordado, e o site também o acorda ao abrir.
-- **Front:** projeto na Vercel com *Root Directory* `frontend` e `NEXT_PUBLIC_CHAT_API` apontando para
-  `https://SEU-SERVICO.onrender.com/api/chat`.
-- **Proteções da API pública:** limite por visitante (`RATE_PER_VISITOR`), teto diário total
-  (`DAILY_LIMIT`) e tamanho máximo da mensagem (`MAX_MESSAGE_CHARS`, 2.000); ao estourar, a Clave
-  responde com uma mensagem pronta sem chamar o modelo. A imagem roda como usuário sem privilégios e usa
-  o IP real do visitante (atrás do proxy) para os limites; `/metrics` exige `METRICS_TOKEN`.
+- **Backend:** Render Blueprint from [`render.yaml`](render.yaml) (free plan, no credit card), using the
+  same Dockerfile. The Anthropic key and `CORS_ORIGINS` (frontend URL) live only in the Render dashboard.
+  The free plan sleeps after 15 min without traffic; a free monitor (UptimeRobot) hitting `/health` every
+  5 min keeps it awake, and the website also wakes it up on load.
+- **Frontend:** Vercel project with *Root Directory* `frontend` and `NEXT_PUBLIC_CHAT_API` pointing to
+  `https://YOUR-SERVICE.onrender.com/api/chat`.
+- **Public API protections:** per-visitor limit (`RATE_PER_VISITOR`), total daily cap (`DAILY_LIMIT`) and
+  maximum message length (`MAX_MESSAGE_CHARS`, 2,000); when a limit is hit, Clave replies with a canned
+  message without calling the model. The image runs as an unprivileged user and uses the visitor's real IP
+  (behind the proxy) for the limits; `/metrics` requires `METRICS_TOKEN`.
 
-### Testes, avaliação, exemplos e MCP
+### Tests, evaluation, examples and MCP
 
 ```bash
 cd backend
-uv run pytest                            # 127 testes, sem chamar a API da Anthropic (roda no CI)
-uv run python -m evals.run               # avaliação com o modelo real (~R$ 2,50, ~1 min)
-uv run python scripts/run_examples.py    # regenera examples/*.md com o modelo real
-uv run python -m emporio.mcp_server      # servidor MCP (stdio); --http para streamable HTTP
+uv run pytest                            # 127 tests, no calls to the Anthropic API (runs in CI)
+uv run python -m evals.run               # evaluation with the real model (~US$ 0.60, ~1 min)
+uv run python scripts/run_examples.py    # regenerates examples/*.md with the real model
+uv run python -m emporio.mcp_server      # MCP server (stdio); --http for streamable HTTP
 ```
 
-Para usar no Claude Desktop/Claude Code, registre o servidor MCP:
+To use it from Claude Desktop/Claude Code, register the MCP server:
 
 ```json
 {
   "mcpServers": {
     "emporio-da-musica": {
       "command": "uv",
-      "args": ["--directory", "<caminho>/backend", "run", "python", "-m", "emporio.mcp_server"]
+      "args": ["--directory", "<path>/backend", "run", "python", "-m", "emporio.mcp_server"]
     }
   }
 }
 ```
 
-> Os pedidos do desafio vão até março/2026. Para os prazos de troca fazerem sentido, fixe o relógio da
-> loja no `.env` (ex.: `STORE_NOW=2026-02-20T15:00`). Sem isso vale a data/hora real de Campo Grande.
+> The challenge's orders go up to March 2026. For the return deadlines to make sense, pin the store clock
+> in `.env` (e.g. `STORE_NOW=2026-02-20T15:00`). Otherwise the real date/time in Campo Grande is used.
 
 ---
 
-## Arquitetura
+## Architecture
 
 ```
-Front (Next.js) ──POST /api/chat──▶ FastAPI ──▶ Agente (LangChain create_agent · Claude · persona Clave)
-                ◀── stream SSE ─────┘   │                    │ chama ferramentas
-                    (AI SDK v1)         │ verificação LGPD   ▼
-                                        └──────────▶ emporio.tools (Python puro, testadas)
-                                                             │        └─ emporio.rules (manual em código)
-                                         SQLite (CSVs tratados) + manual em seções (JSON)
+Front (Next.js) ──POST /api/chat──▶ FastAPI ──▶ Agent (LangChain create_agent · Claude · Clave persona)
+                ◀── SSE stream ─────┘   │                    │ calls tools
+                    (AI SDK v1)         │ privacy check      ▼
+                                        └──────────▶ emporio.tools (plain Python, tested)
+                                                             │        └─ emporio.rules (manual as code)
+                                         SQLite (cleaned CSVs) + manual split into sections (JSON)
                                                              ▲
-                                      Servidor MCP ──────────┘ expõe as mesmas ferramentas
+                                      MCP server ────────────┘ exposes the same tools
 ```
 
-### Como a Clave decide entre dados e políticas
+### How Clave decides between data and policies
 
-O prompt de sistema traz uma tabela "necessidade → ferramenta" e uma regra de ouro: **nunca informar
-preço, estoque, promoção, parcela, prazo, horário ou status de pedido sem consultar uma ferramenta**
-(é o que o próprio manual pede na seção 7.1).
+The system prompt contains a "need → tool" table and one golden rule: **never state a price, stock level,
+promotion, installment, deadline, opening hour or order status without calling a tool** (which is exactly
+what the store manual asks of its staff in section 7.1).
 
-| Ferramenta | Tipo | Quando |
+| Tool | Kind | When |
 |---|---|---|
-| `buscar_produtos` | dados | procurar/comparar instrumentos, preço, estoque (filtros de categoria, preço, corda, disponibilidade) |
-| `buscar_promocoes` | dados | promoções ativas; com `busca`, também as campanhas já encerradas de um produto |
-| `calcular_pagamento` | dados + regras | preço final, Pix e parcelas permitidas para um produto |
-| `consultar_politicas` | políticas | trocas, garantia, frete, pagamento, contato, LGPD… devolve a seção do manual |
-| `status_loja` | regras | se a loja está aberta agora (horário + feriados), endereço e contatos |
-| `solicitar_verificacao` | UI | abre o formulário seguro de número do pedido + telefone/e-mail |
-| `consultar_pedido` | dados | status, itens, rastreio e prazos de troca de um pedido já verificado |
+| `buscar_produtos` | data | search/compare instruments, price, stock (category, price, string type and availability filters) |
+| `buscar_promocoes` | data | active promotions; with `busca`, also a product's past campaigns |
+| `calcular_pagamento` | data + rules | final price, Pix price and the installments allowed for a product |
+| `consultar_politicas` | policy | returns, warranty, shipping, payment, contact, privacy… returns the manual section |
+| `status_loja` | rules | whether the store is open now (hours + holidays), address and contacts |
+| `solicitar_verificacao` | UI | opens the secure form for order number + phone/e-mail |
+| `consultar_pedido` | data | status, items, tracking and return deadlines of an already verified order |
 
 ---
 
-## Decisões técnicas
+## Technical decisions
 
-**LangChain `create_agent` (LangGraph por baixo) em vez de um loop próprio.** O problema é um agente
-ReAct clássico (modelo decide → ferramenta → modelo responde). O `create_agent` dá isso pronto, com
-checkpointer (memória por `thread_id` = id da conversa do front), estado customizado e *middlewares*
-(cache de prompt da Anthropic e limite de chamadas ao modelo por mensagem). Um grafo próprio só valeria
-com fluxos de várias etapas (ex.: aprovação humana de troca).
+**LangChain `create_agent` (LangGraph under the hood) instead of a hand-rolled loop.** This is a classic
+ReAct agent (model decides → tool → model answers). `create_agent` provides it out of the box, with a
+checkpointer (memory per `thread_id` = the frontend's conversation id), custom state and *middlewares*
+(Anthropic prompt caching and a per-message model call limit). A custom graph would only pay off for
+multi-step flows (e.g. human approval of a return).
 
-**Claude Sonnet 5.5** (configurável por `EMPORIO_MODEL`; Haiku 4.5 é a opção barata). O atendimento
-pede bom julgamento de quando chamar cada ferramenta, seguir regras de política sem inventar e trocar de
-idioma com naturalidade.
+**Claude Sonnet 5.5** (configurable via `EMPORIO_MODEL`; Haiku 4.5 is the cheap option). Customer service
+needs good judgment about when to call each tool, following policy rules without making things up, and
+switching languages naturally.
 
-**Prompt de sistema 100% fixo + cache em toda a conversa.** O prompt (persona, regras, tabela de
-ferramentas) nunca muda; o que varia a cada mensagem — data, idioma detectado, resultado da verificação
-de pedido — vai numa nota anexada à mensagem do cliente. Com o `AnthropicPromptCachingMiddleware`, o
-prompt, as ferramentas e o histórico entram no cache: **~93% dos tokens de entrada vêm do cache** e o
-custo por resposta caiu pela metade (~R$ 0,12 → ~R$ 0,06). O prompt fixo também é uma exigência: o
-Sonnet guarda blocos de raciocínio assinados no histórico, que só são aceitos com o mesmo prompt de
-sistema — quando a data/idioma ficavam no prompt, uma conversa que trocava de idioma quebrava (a
-avaliação e os exemplos pegaram isso).
+**A 100% static system prompt + caching across the whole conversation.** The prompt (persona, rules, tool
+table) never changes; what varies per message — date, detected language, order verification result — goes
+into a note attached to the customer's message. With `AnthropicPromptCachingMiddleware`, the prompt, the
+tools and the history are cached: **~93% of input tokens come from the cache** and the cost per reply
+dropped by half (~R$ 0.12 → ~R$ 0.06). The static prompt is also a requirement: Sonnet keeps signed
+reasoning blocks in the history, which are only accepted with the same system prompt — when the date and
+language lived in the prompt, a conversation that switched languages broke (the evaluation and the
+examples caught it).
 
-**Ferramentas em Python puro e regras do manual em código.** Contas não ficam com o modelo:
-parcela mínima por faixa, Pix que não acumula com promoção, prazos de arrependimento/defeito/garantia,
-horário e feriados estão em `emporio/rules.py` com testes de borda. O modelo recebe o resultado pronto
-e só explica. Isso elimina a classe de erro mais grave num atendimento de loja (prometer preço ou prazo
-errado) e deixa cada regra auditável com a seção do manual citada no código.
+**Tools in plain Python and the manual's rules in code.** The model never does arithmetic: the minimum
+installment per tier, Pix discount not stacking with promotions, cooling-off/defect/warranty deadlines,
+opening hours and holidays all live in `emporio/rules.py` with edge-case tests. The model gets the
+finished result and only explains it. This removes the most serious class of error in retail customer
+service (promising the wrong price or deadline) and keeps every rule auditable, with the manual section
+cited in the code.
 
-**Retrieval proporcional ao tamanho do manual.** São 8 páginas. O PDF vira `policies.json` com uma
-entrada por seção numerada (`4.1`, `3.1`…), e `consultar_politicas` pontua as seções por assunto
-(expressões em PT e EN com pesos) + sobreposição de palavras, devolvendo até 3 trechos com o texto
-original e a fonte (que a UI mostra como chip "Fonte: 4.1"). Um banco vetorial aqui seria mais
-infraestrutura sem ganho de precisão; com centenas de documentos eu trocaria por embeddings + rerank.
+**Retrieval sized to the manual.** It's 8 pages. The PDF becomes `policies.json` with one entry per
+numbered section (`4.1`, `3.1`…), and `consultar_politicas` scores sections by topic (weighted PT and EN
+expressions) plus word overlap, returning up to 3 excerpts with the original text and the source (shown in
+the UI as a "Source: 4.1" chip). A vector database here would add infrastructure with no precision gain;
+with hundreds of documents I would switch to embeddings + rerank.
 
-**MCP como interface adicional, não como dependência do chat.** As mesmas funções viram um servidor
-MCP (`emporio/mcp_server.py`, SDK `mcp` 2.x), com as seções do manual também como recurso
-(`manual://secoes/{secao}`). O agente do site chama as funções direto: uma falha no transporte MCP não
-derruba o atendimento, e o servidor continua útil para a equipe usar a partir do Claude Desktop ou para
-outro agente.
+**MCP as an extra interface, not a dependency of the chat.** The same functions become an MCP server
+(`emporio/mcp_server.py`, `mcp` SDK 2.x), with the manual sections also exposed as resources
+(`manual://secoes/{secao}`). The website's agent calls the functions directly: an MCP transport failure
+doesn't take customer service down, and the server is still useful for the staff (from Claude Desktop) or
+for another agent.
 
-**Privacidade (LGPD) na API, não no prompt.** Para ver um pedido, a Clave chama `solicitar_verificacao`
-e o front mostra um formulário. A **API** confere número + contato e guarda só o resultado no estado da
-conversa; o modelo recebe uma nota "verificação aprovada/falhou" e chama `consultar_pedido(numero)`,
-que só devolve pedidos já verificados naquela conversa. Telefone e e-mail digitados no chat também são
-usados para verificar e **apagados do texto** antes de chegar ao modelo e ao histórico. A resposta de
-erro é a mesma para "pedido não existe" e "contato não confere", para não revelar quais pedidos existem,
-e cada origem tem no máximo 5 verificações erradas a cada 15 minutos.
+**Privacy (Brazil's LGPD) enforced by the API, not the prompt.** To look up an order, Clave calls
+`solicitar_verificacao` and the frontend shows a form. The **API** checks order number + contact and stores
+only the result in the conversation state; the model gets a "verification passed/failed" note and calls
+`consultar_pedido(number)`, which only returns orders already verified in that conversation. Phone numbers
+and e-mails typed into the chat are also used for verification and **removed from the text** before they
+reach the model or the history. The error reply is the same for "order doesn't exist" and "contact
+doesn't match", so it doesn't reveal which orders exist, and each origin gets at most 5 failed
+verifications every 15 minutes.
 
-**Stream no protocolo do Vercel AI SDK.** A API converte os eventos do LangGraph (`messages` +
-`updates`) em eventos `text-*`, `tool-input-*`, `tool-output-available` e `data-suggestions`. O front
-renderiza cada chamada de ferramenta como interface: cards de produto, card do pedido, chip da fonte,
-formulário. As sugestões de próxima pergunta vêm de uma linha `<sugestoes>…</sugestoes>` que o modelo
-escreve no fim e a API tira do texto (mesmo quando o marcador chega quebrado entre dois pedaços).
+**Vercel AI SDK stream protocol.** The API turns LangGraph events (`messages` + `updates`) into
+`text-*`, `tool-input-*`, `tool-output-available` and `data-suggestions` events. The frontend renders each
+tool call as UI: product cards, order card, source chip, form. The next-question suggestions come from a
+`<sugestoes>…</sugestoes>` line the model writes at the end, which the API strips from the text (even when
+the marker is split across two chunks).
 
-**Bilíngue.** O site é em inglês por padrão e português em `/pt`; a Clave responde no idioma da última
-mensagem do cliente e usa o idioma da página só quando não dá para saber. A API detecta o idioma da
-mensagem (heurística de palavras comuns em PT/EN) e escreve a nota de contexto nesse idioma: uma nota em
-português pedindo "responda em inglês" ainda puxava o modelo para o português.
+**Bilingual.** The website is in English by default and Portuguese at `/pt`; Clave replies in the language
+of the customer's last message and only falls back to the page language when it can't tell. The API
+detects the message language (a heuristic over common PT/EN words) and writes the context note in that
+language: a Portuguese note saying "reply in English" still pulled the model toward Portuguese.
 
-**Custo e latência medidos por resposta.** Cada resposta registra latência total e até o primeiro token,
-chamadas ao modelo, tokens (entrada, cache lido/gravado, saída), custo em US$/R$ e o tempo de cada
-ferramenta — no log, em `backend/var/metrics.jsonl`, no `messageMetadata` do stream e agregado em
-`GET /metrics` (p50/p95, custo total e por resposta, taxa de cache).
+**Cost and latency measured per reply.** Each reply records total latency and time to first token, model
+calls, tokens (input, cache read/write, output), cost in US$/R$ and each tool's duration — in the log, in
+`backend/var/metrics.jsonl`, and aggregated at `GET /metrics` (p50/p95, total and per-reply cost, cache
+rate).
 
-### Tratamento dos dados
+### Data handling
 
-`emporio/data/build.py` gera `backend/var/store.db` e `backend/var/policies.json`. Inconsistências
-encontradas e a decisão tomada:
+`emporio/data/build.py` generates `backend/var/store.db` and `backend/var/policies.json`. Inconsistencies
+found and the decision taken:
 
-| Problema | Decisão |
+| Issue | Decision |
 |---|---|
-| WhatsApp (67) 3341-4444 (capa e 1.2) × (67) 3321-4500 (seção 7) | 3341-4444, que aparece duas vezes; corrigido no texto do manual |
-| E-mail com acento na seção 1.2 (`contato@empóriodamusica…`) | `contato@emporiodamusica.com.br`, como na capa |
-| Tabela da seção 3 diz parcela mínima de R$ 100; a 3.1 detalha faixas | vale a 3.1 (mais específica): até 3x ≥ R$ 50, 4–6x ≥ R$ 80, 7–12x ≥ R$ 100 |
-| Categorias sem produtos (sopros, cordas orquestrais) | a busca avisa que não há itens na categoria no momento |
-| Pedido #3: total ≠ soma dos itens | vale o `total_brl` (valor faturado) |
-| Pedidos não têm data real de entrega | para pedidos entregues, uso a data prevista e a Clave avisa isso ao cliente |
-| Telefones em formatos variados | normalizados para dígitos; a verificação aceita com ou sem DDD/+55 |
-| Produto descontinuado | sai das listagens gerais, mas aparece se o cliente procurar por ele (para a Clave dizer que saiu de linha e sugerir outro) |
+| WhatsApp (67) 3341-4444 (cover and 1.2) vs (67) 3321-4500 (section 7) | 3341-4444, which appears twice; fixed in the manual text |
+| E-mail with an accent in section 1.2 (`contato@empóriodamusica…`) | `contato@emporiodamusica.com.br`, as on the cover |
+| Section 3's table says minimum installment is R$ 100; 3.1 details tiers | 3.1 wins (more specific): up to 3x ≥ R$ 50, 4–6x ≥ R$ 80, 7–12x ≥ R$ 100 |
+| Categories with no products (woodwinds/brass, orchestral strings) | the search says the category has no items at the moment |
+| Order #3: total ≠ sum of items | `total_brl` wins (the invoiced amount) |
+| Orders have no actual delivery date | for delivered orders, the estimated date is used and Clave tells the customer so |
+| Phone numbers in assorted formats | normalized to digits; verification accepts them with or without area code/+55 |
+| Discontinued product | left out of general listings, but shown if the customer asks for it (so Clave can say it's discontinued and suggest another) |
 
 ---
 
-## Avaliação
+## Evaluation
 
-`backend/evals/run.py` roda **43 casos** ([`casos.json`](backend/evals/casos.json)) contra o agente
-real, pelo mesmo caminho do site (API, stream, verificação LGPD), em 9 categorias: catálogo, pagamento,
-promoção, política, loja, pedido, escopo, segurança e idioma. Cada caso passa por duas camadas:
+`backend/evals/run.py` runs **43 cases** ([`casos.json`](backend/evals/casos.json)) against the real agent,
+through the same path as the website (API, stream, privacy check), in 9 categories: catalog, payment,
+promotion, policy, store, order, scope, security and language. Each case goes through two layers:
 
-1. **Checagens determinísticas** na resposta final: ferramenta certa chamada (e as proibidas não),
-   seção do manual consultada, valores e prazos que precisam aparecer (`R$ 2.089,05`, `24/02`…) e o
-   que não pode aparecer (telefone do cliente, código de rastreio quando a verificação falha, o prompt).
-   O idioma da resposta também é checado de forma objetiva, com o mesmo detector da API.
-2. **LLM-as-judge** com saída estruturada (aprovado + nota 1–5 + motivo): recebe as instruções da Clave,
-   a conversa, o que as ferramentas devolveram e o critério do caso; checa fidelidade aos dados, idioma,
-   tom e escopo.
+1. **Deterministic checks** on the final reply: the right tool was called (and forbidden ones weren't),
+   the manual section was consulted, values and deadlines that must appear (`R$ 2.089,05`, `24/02`…) and
+   what must not appear (the customer's phone, the tracking code when verification fails, the prompt).
+   The reply language is also checked objectively, with the same detector the API uses.
+2. **LLM-as-judge** with structured output (pass + 1–5 score + reason): it gets Clave's instructions, the
+   conversation, what the tools returned and the case's criterion, and checks faithfulness to the data,
+   language, tone and scope.
 
-Resultado mais recente ([relatório](backend/evals/resultados/ultimo.md)): **43/43 casos, 119/119
-checagens, nota média 4,93/5**, custo da rodada ~R$ 3,30. Como o modelo é estocástico, rodadas
-seguidas ficam entre 95% e 100%.
+Latest run ([report](backend/evals/resultados/ultimo.md), in Portuguese): **43/43 cases, 119/119 checks,
+average score 4.93/5**, ~US$ 0.60 per run. Since the model is stochastic, consecutive runs land between 95%
+and 100%.
 
-A avaliação começou em **58%** e foi o que guiou as melhorias — parte eram falhas reais do agente, parte
-eram falhas do próprio avaliador:
+The evaluation started at **58%** and drove the improvements — some failures were real agent bugs, others
+were flaws in the evaluator itself:
 
-| Encontrado pela avaliação | Correção |
+| Found by the evaluation | Fix |
 |---|---|
-| "meu pedido **é o** 18" + telefone no chat não disparava a verificação | regex de número de pedido mais flexível (com testes) |
-| "setup personalizado" não recuperava a seção 4.4 (itens não elegíveis) | assunto novo na busca do manual (com teste) |
-| Cliente em inglês numa página em português recebia resposta/botões em português | detecção de idioma na API + nota no idioma da resposta |
-| Conversa que trocava de idioma quebrava (raciocínio assinado × prompt variável) | prompt de sistema 100% fixo |
-| A Clave não explicava "sem juros" nem o porquê do limite de parcelas | `calcular_pagamento` passou a devolver essas regras |
-| A Clave ofereceu "retirada na loja", que o manual não cita | regra explícita no prompt contra serviços fora do manual |
-| Conversa real: depois de turnos em português, o cliente escreveu "help to find instrument" e a Clave respondeu em português (e se corrigiu no meio) | o resultado de cada ferramenta passa a dizer o idioma da resposta (é logo depois dele que o modelo escreve); detector de idioma entende mensagens curtas e abreviadas ("vc", "fala"); a conversa virou caso fixo da avaliação |
-| Pedido vago ("me ajuda a achar um instrumento") mostrava só ukuleles (os mais baratos) | sem filtros, a busca devolve uma opção de cada categoria |
-| Juiz reprovava contatos oficiais da loja e a citação da seção do manual | juiz passou a receber as instruções da Clave como referência |
+| "meu pedido **é o** 18" ("my order is 18") + phone in the chat didn't trigger verification | more flexible order-number regex (with tests) |
+| "custom setup" didn't retrieve section 4.4 (non-returnable items) | new topic in the manual search (with a test) |
+| An English-speaking customer on the Portuguese page got replies/buttons in Portuguese | language detection in the API + note in the reply language |
+| A conversation that switched languages broke (signed reasoning × changing prompt) | 100% static system prompt |
+| Clave didn't explain "interest-free" or why installments were capped | `calcular_pagamento` now returns those rules |
+| Clave offered "in-store pickup", which the manual doesn't mention | explicit prompt rule against services not in the manual |
+| Real conversation: after Portuguese turns, the customer wrote "help to find instrument" and Clave answered in Portuguese (then corrected herself mid-reply) | each tool result now states the reply language (that's right where the model starts writing); the detector understands short and abbreviated messages ("vc", "fala"); the conversation became a permanent evaluation case |
+| A vague request ("help me find an instrument") showed only ukuleles (the cheapest) | with no filters, the search returns one option per category |
+| The judge failed the store's official contacts and citations of manual sections | the judge now gets Clave's instructions as reference |
 
 ---
 
-## Exemplos de conversa
+## Example conversations
 
-Gerados com o modelo real por `backend/scripts/run_examples.py`, com o relógio da loja em
-20/02/2026 15:00. Cada arquivo mostra as ferramentas chamadas e o resultado resumido.
+Generated with the real model by `backend/scripts/run_examples.py`, with the store clock set to
+2026-02-20 15:00. Each file shows the tools called and a summary of their results. Conversations 1, 2, 3
+and 5 are in Portuguese, as the store's customers would write.
 
-1. [Violão para iniciante + parcelamento](examples/01-violao-iniciante-e-parcelamento.md) — busca com filtros e regras de parcela da 3.1
-2. [Promoção, Pix e campanha encerrada](examples/02-promocao-pix-e-campanha-encerrada.md) — 6.2 (não acumula) e 7.3 (promoção expirada)
-3. [Devolução com verificação de pedido](examples/03-devolucao-com-verificacao-de-pedido.md) — LGPD + prazos do pedido real (4.1)
-4. [Cliente em inglês: horário, acessórios e guitarras](examples/04-english-hours-and-accessories.md)
-5. [Fora de escopo e categoria vazia](examples/05-fora-de-escopo-e-categoria-vazia.md) — inclui tentativa de burlar as regras
-
----
-
-## Limitações conhecidas
-
-- **Busca de produtos léxica.** Entende acento, plural e filtros, mas não sinônimos ("violão de show"
-  não encontra "eletroacústico" se o cliente não usar a palavra). O modelo compensa usando filtros.
-- **Frete para outras cidades não é calculado**: o manual diz que depende de CEP, peso e dimensões, e
-  não há tabela. A Clave explica as modalidades e prazos e encaminha para a equipe.
-- **Data de entrega real não existe nos dados**; prazos de arrependimento usam a data prevista.
-- **Sem carrinho nem checkout reais.** O botão "adicionar" do site é demonstrativo.
-- **Reclamações não são registradas** em sistema; a Clave acolhe e encaminha para os contatos da loja.
-- **A avaliação usa o mesmo modelo como juiz** (risco de viés a favor das próprias respostas) e 37 casos
-  ainda são poucos; as checagens determinísticas existem justamente para não depender só do juiz.
-- **Detecção de idioma é heurística** e só distingue português e inglês.
-
-## O que eu faria com mais tempo
-
-- **Avaliação contínua:** rodar a avaliação no CI (agendada, com a chave como *secret*), cada caso
-  algumas vezes para medir variância, juiz de outra família de modelo, mais casos tirados de conversas
-  reais e tracing com LangSmith.
-- **Busca híbrida no catálogo** (embeddings + filtros) e, se o manual crescer, embeddings + rerank nas
-  políticas.
-- **Handoff humano de verdade:** criar o atendimento no WhatsApp/CRM com o resumo da conversa quando o
-  cliente pedir ou em reclamações (com *human-in-the-loop* do LangGraph para trocas e devoluções).
-- **Proteções adicionais:** limite de taxa por conversa, detecção de PII com o `PIIMiddleware` para
-  outros dados (CPF, endereço) e testes adversariais de *prompt injection*.
-- **Produção de verdade:** Postgres no checkpointer (hoje SQLite no disco do container, que some quando
-  o serviço reinicia) e limites de uso no Redis, para rodar mais de uma instância.
+1. [Beginner guitar + installments](examples/01-violao-iniciante-e-parcelamento.md) — filtered search and the installment rules of 3.1
+2. [Promotion, Pix and an expired campaign](examples/02-promocao-pix-e-campanha-encerrada.md) — 6.2 (no stacking) and 7.3 (expired promotion)
+3. [Return with order verification](examples/03-devolucao-com-verificacao-de-pedido.md) — privacy flow + the real order's deadlines (4.1)
+4. [English-speaking customer: hours, accessories and guitars](examples/04-english-hours-and-accessories.md)
+5. [Out of scope and an empty category](examples/05-fora-de-escopo-e-categoria-vazia.md) — includes an attempt to bypass the rules
 
 ---
 
-## Uso de assistentes de código
+## Known limitations
 
-Usei o **Claude Code** (Claude Opus) durante todo o projeto, como par de programação:
+- **Lexical product search.** It handles accents, plurals and filters, but not synonyms ("stage guitar"
+  won't find "electro-acoustic" unless the customer uses the word). The model compensates with filters.
+- **Shipping to other cities isn't calculated**: the manual says it depends on postal code, weight and
+  dimensions, and there's no table. Clave explains the options and lead times and refers to the staff.
+- **There's no actual delivery date in the data**; cooling-off deadlines use the estimated date.
+- **No real cart or checkout.** The website's "add" button is for demonstration.
+- **Complaints aren't logged** in any system; Clave acknowledges them and refers to the store's contacts.
+- **The evaluation uses the same model as judge** (risk of bias toward its own answers) and 43 cases are
+  still few; the deterministic checks exist precisely so as not to rely on the judge alone.
+- **Language detection is heuristic** and only tells Portuguese from English.
 
-- **Desenho:** discuti as opções de arquitetura (stack, MCP como interface extra, regras em código,
-  retrieval sem banco vetorial, LGPD na API) antes de codar; o desenho aprovado está em
-  [`docs/specs/2026-11-07-backend-design.md`](docs/specs/2026-11-07-backend-design.md) e o plano em
-  [`docs/plans/2026-11-07-backend.md`](docs/plans/2026-11-07-backend.md).
-- **Implementação com testes primeiro:** dados, regras e ferramentas foram escritos a partir de testes
-  com os casos que eu queria garantir (bordas de parcela, Pix com promoção, prazos, contato errado não
-  revelar nada). O Claude Code escreveu boa parte do código; eu revisei, ajustei decisões e validei os
-  resultados contra o manual e os CSVs.
-- **Avaliação e melhoria:** montamos juntos os casos de avaliação; rodar a avaliação, ler as falhas e
-  separar "erro do agente" de "erro do avaliador" foi o ciclo que levou de 58% para 95–100%.
-- **Frontend e 3D:** o site, o chat e os scripts do Blender que modelam e "assam" o violão 3D também
-  foram feitos com o Claude Code, iterando a partir de referências visuais.
-- **O que ficou comigo:** escolhas de produto (persona, bilíngue, o que a Clave deve recusar),
-  interpretação das inconsistências dos dados, revisão das conversas de exemplo e a decisão de onde o
-  modelo pode ou não decidir sozinho.
+## What I'd do with more time
 
-O histórico de commits mostra a evolução real do projeto, etapa por etapa.
+- **Continuous evaluation:** run the evaluation in CI (scheduled, with the key as a *secret*), each case
+  several times to measure variance, a judge from another model family, more cases drawn from real
+  conversations, and tracing with LangSmith.
+- **Hybrid catalog search** (embeddings + filters) and, if the manual grows, embeddings + rerank for the
+  policies.
+- **Real human handoff:** open the ticket in WhatsApp/CRM with a conversation summary when the customer
+  asks or on complaints (with LangGraph *human-in-the-loop* for returns and exchanges).
+- **Extra safeguards:** per-conversation rate limits, PII detection with `PIIMiddleware` for other data
+  (tax ID, address) and adversarial *prompt injection* tests.
+- **Real production setup:** Postgres for the checkpointer (today it's SQLite on the container disk, which
+  is lost when the service restarts) and usage limits in Redis, to run more than one instance.
+
+---
+
+## Use of coding assistants
+
+I used **Claude Code** (Claude Opus) throughout the project as a pair programmer:
+
+- **Design:** I discussed the architecture options (stack, MCP as an extra interface, rules in code,
+  retrieval without a vector database, privacy enforced in the API) before writing code; the approved
+  design is in [`docs/specs/2026-11-07-backend-design.md`](docs/specs/2026-11-07-backend-design.md) and the
+  plan in [`docs/plans/2026-11-07-backend.md`](docs/plans/2026-11-07-backend.md) (both in Portuguese).
+- **Test-first implementation:** data, rules and tools were written from tests covering the cases I wanted
+  to guarantee (installment edge cases, Pix with a promotion, deadlines, a wrong contact revealing
+  nothing). Claude Code wrote much of the code; I reviewed it, adjusted decisions and validated the results
+  against the manual and the CSVs.
+- **Evaluation and improvement:** we built the evaluation cases together; running the evaluation, reading
+  the failures and separating "agent error" from "evaluator error" was the loop that took it from 58% to
+  95–100%.
+- **Frontend and 3D:** the website, the chat and the Blender scripts that model and bake the 3D guitar
+  were also built with Claude Code, iterating from visual references.
+- **What stayed with me:** product choices (persona, bilingual, what Clave should decline), interpreting
+  the data inconsistencies, reviewing the example conversations, and deciding where the model may or may
+  not decide on its own.
+
+The commit history shows the real evolution of the project, step by step.
