@@ -83,23 +83,43 @@ def summarize(name: str, output) -> str:
         return str(output)[:160]
     if "produtos" in output:
         items = [
-            f"{p['name']} (R$ {p['promo']['price'] if 'promo' in p else p['price']:,.2f}"
-            + (f", -{p['promo']['percent']}%" if "promo" in p else "")
-            + (", sem estoque" if p["stock"] == 0 else "")
+            f"{p['name']} ({brl(p['promo']['price'] if 'promo' in p else p['price'])}"
+            + (f", −{p['promo']['percent']}%" if "promo" in p else "")
+            + (", sem estoque" if p["stock"] == 0 else f", {p['stock']} em estoque")
             + ")"
             for p in output["produtos"]
         ]
-        extra = f"; encerradas: {output['encerradas']}" if output.get("encerradas") else ""
-        aviso = f"; aviso: {output['aviso']}" if output.get("aviso") else ""
-        return f"{len(items)} produto(s): " + "; ".join(items) + extra + aviso
+        parts = ["; ".join(items) if items else "nenhum produto"]
+        if output.get("encerradas"):
+            parts.append("encerradas: " + ", ".join(f"{e['campanha']} −{e['percent']}%" for e in output["encerradas"]))
+        if output.get("aviso"):
+            parts.append(f"aviso: “{output['aviso']}”")
+        return " · ".join(parts)
     if "fontes" in output:
-        return "seções " + ", ".join(f["id"] for f in output["fontes"]) or output.get("aviso", "")
+        return ("seção " + ", ".join(f["id"] for f in output["fontes"])) if output["fontes"] else output.get("aviso")
+    if name == "calcular_pagamento" and "preco" in output:
+        top = output["opcoes"][-1]
+        pix = brl(output["pix"]) if output["pix"] else "sem desconto (promoção)"
+        return f"{brl(output['preco'])} · Pix {pix} · até {top['parcelas']}x de {brl(top['valor'])}"
+    if name == "status_loja":
+        estado = f"aberta até {output['fecha_as']}" if output["aberta"] else f"fechada, abre {output['abre']}"
+        return f"{output['agora']} · {estado}"
     if name == "consultar_pedido":
         if not output.get("verificado"):
             return f"não verificado ({output.get('motivo')})"
-        p = output["pedido"]
-        return f"pedido #{p['numero']} {p['status']}, prazos: {json.dumps(output.get('prazos'), ensure_ascii=False)}"
-    return json.dumps(output, ensure_ascii=False)[:220]
+        p, prazos = output["pedido"], output.get("prazos") or {}
+        resumo = f"pedido #{p['numero']} {p['status']}"
+        if prazos:
+            resumo += (
+                f" · arrependimento até {prazos['arrependimento_ate']} "
+                f"(no prazo: {prazos['arrependimento_no_prazo']}) · defeito até {prazos['defeito_ate']}"
+            )
+        return resumo
+    return json.dumps(output, ensure_ascii=False)
+
+
+def brl(value: float) -> str:
+    return "R$ " + f"{value:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
 
 def run(client: TestClient, slug: str, title: str, locale: str, turns: list) -> str:
