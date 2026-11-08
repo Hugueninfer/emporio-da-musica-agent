@@ -384,6 +384,8 @@ export const en: Dictionary = {
     consultar_pedido: { running: "Checking the order…", done: "Order checked" },
     consultar_politicas: { running: "Reading store policies…", done: "Policies checked" },
     solicitar_verificacao: { running: "Preparing verification…", done: "Verification requested" },
+    calcular_pagamento: { running: "Working out payment options…", done: "Payment options ready" },
+    status_loja: { running: "Checking store hours…", done: "Store hours checked" },
     fallback: { running: "Checking the system…", done: "Lookup done" },
     error: "I couldn't reach the system right now",
     results: (n) => `${n} ${n === 1 ? "result" : "results"}`,

@@ -330,6 +330,8 @@ export const pt = {
     consultar_pedido: { running: "Verificando pedido…", done: "Pedido verificado" },
     consultar_politicas: { running: "Lendo políticas da loja…", done: "Políticas consultadas" },
     solicitar_verificacao: { running: "Preparando verificação…", done: "Verificação solicitada" },
+    calcular_pagamento: { running: "Calculando pagamento…", done: "Pagamento calculado" },
+    status_loja: { running: "Conferindo o horário da loja…", done: "Horário conferido" },
     fallback: { running: "Consultando o sistema…", done: "Consulta concluída" },
     error: "Não consegui consultar o sistema agora",
     results: (n: number) => `${n} ${n === 1 ? "resultado" : "resultados"}`,
