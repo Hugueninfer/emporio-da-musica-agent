@@ -231,6 +231,8 @@ export const pt = {
     portraitAlt: "Clave, assistente virtual da Empório: ilustração de uma violonista sorrindo, com uma palheta na mão",
     online: "online agora",
     typing: "· digitando…",
+    thinking: "pensando…",
+    writing: "escrevendo a resposta…",
     you: "Você: ",
     replies: "Responde na hora",
     placeholder: "Pergunte sobre instrumentos, pedidos ou a loja…",

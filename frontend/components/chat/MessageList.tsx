@@ -59,7 +59,8 @@ export function MessageList({ scrollRef, className }: { scrollRef: RefObject<HTM
           key={m.id}
           message={m}
           isLast={i === messages.length - 1}
-          streaming={status === "streaming" && i === messages.length - 1 && m.role === "assistant"}
+          // "submitted" também conta: a mensagem da Clave já existe antes do primeiro conteúdo chegar
+          streaming={busy && i === messages.length - 1 && m.role === "assistant"}
         />
       ))}
       {busy && last?.role === "user" && <PendingMessage />}

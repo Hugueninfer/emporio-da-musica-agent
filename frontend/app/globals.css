@@ -17,6 +17,8 @@
   --em-input: #1f140f;
   --em-line: rgba(244, 233, 220, 0.1);
   --em-line-strong: rgba(244, 233, 220, 0.16);
+  --em-scroll-thumb: rgba(244, 233, 220, 0.16);
+  --em-scroll-thumb-hover: rgba(244, 233, 220, 0.3);
   --em-text: #f4e9dc;
   --em-text-2: #d8c3af;
   --em-muted: #b9a08c;
@@ -65,6 +67,8 @@
   --em-input: #fffaf3;
   --em-line: #e0cfb8;
   --em-line-strong: #d8c3a7;
+  --em-scroll-thumb: rgba(34, 21, 15, 0.2);
+  --em-scroll-thumb-hover: rgba(34, 21, 15, 0.36);
   --em-text: #2b1910;
   --em-text-2: #4a3226;
   --em-muted: #6f5544;
@@ -194,6 +198,14 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
   }
+  /* Barra de rolagem fina, transparente e na cor do tema (no lugar da barra branca do sistema). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--em-scroll-thumb) transparent;
+  }
+  *:hover {
+    scrollbar-color: var(--em-scroll-thumb-hover) transparent;
+  }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -223,6 +235,62 @@
 }
 .em-live {
   animation: em-live 1.6s ease-in-out infinite;
+}
+
+/* "Clave está pensando": três pontos que pulam em sequência + texto com um brilho que passa. */
+.em-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 14px;
+}
+.em-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--em-accent);
+  animation: em-dot 1.2s ease-in-out infinite;
+}
+.em-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.em-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes em-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+.em-shimmer {
+  background: linear-gradient(
+      90deg,
+      var(--em-muted) 0%,
+      var(--em-muted) 40%,
+      var(--em-text) 50%,
+      var(--em-muted) 60%,
+      var(--em-muted) 100%
+    )
+    0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: em-shimmer 2s linear infinite;
+}
+@keyframes em-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
 }
 
 @keyframes em-blink {

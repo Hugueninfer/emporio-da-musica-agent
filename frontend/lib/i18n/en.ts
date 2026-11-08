@@ -280,6 +280,8 @@ export const en: Dictionary = {
     portraitAlt: "Clave, Empório's virtual assistant: illustration of a smiling guitarist holding a guitar pick",
     online: "online now",
     typing: "· typing…",
+    thinking: "thinking…",
+    writing: "writing the answer…",
     you: "You: ",
     replies: "Replies instantly",
     placeholder: "Ask about instruments, orders or the store…",

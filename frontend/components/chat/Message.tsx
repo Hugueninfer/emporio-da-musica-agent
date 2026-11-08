@@ -16,6 +16,7 @@ import { ProductList } from "./parts/ProductCard";
 import { SourceChip } from "./parts/SourceChip";
 import { SuggestionChips } from "./parts/SuggestionChips";
 import { TextPart } from "./parts/TextPart";
+import { ThinkingIndicator } from "./parts/ThinkingIndicator";
 import { ToolIndicator } from "./parts/ToolIndicator";
 
 type Part = EmUIMessage["parts"][number];
@@ -126,6 +127,18 @@ export function Message({ message, streaming, isLast }: { message: EmUIMessage; 
     );
   });
 
+  // Enquanto a Clave trabalha sem nada novo na tela: antes de qualquer conteúdo ("pensando…") ou depois
+  // de uma ferramenta terminar, até o texto começar ("escrevendo a resposta…").
+  if (streaming) {
+    const lastPart = message.parts.filter((p) => (p.type === "text" ? p.text : asTool(p))).at(-1);
+    const lastTool = lastPart && lastPart.type !== "text" ? asTool(lastPart) : null;
+    if (!lastPart) {
+      blocks.push(<ThinkingIndicator key="thinking" label={t.chat.thinking} />);
+    } else if (lastTool?.state === "output-available") {
+      blocks.push(<ThinkingIndicator key="thinking" label={t.chat.writing} />);
+    }
+  }
+
   const uniqueSources = sources.filter((s, i) => sources.findIndex((x) => x.secao === s.secao) === i);
   const content = (
     <>
@@ -142,10 +155,7 @@ export function Message({ message, streaming, isLast }: { message: EmUIMessage; 
     <article className="flex items-start gap-3.5">
       <AssistantAvatar />
       <div className="flex min-w-0 grow flex-col gap-3.5">
-        <span className="text-[13px] font-semibold text-em-muted">
-          {t.chat.assistant}
-          {streaming && <span className="font-normal"> {t.chat.typing}</span>}
-        </span>
+        <span className="text-[13px] font-semibold text-em-muted">{t.chat.assistant}</span>
         {content}
       </div>
     </article>
@@ -158,8 +168,8 @@ export function PendingMessage() {
   const { t } = useI18n();
   if (variant === "widget") {
     return (
-      <div className="self-start rounded-[16px_16px_16px_4px] bg-em-bubble-bot px-3.5 py-[11px]" aria-label={t.chat.pending}>
-        <span className="em-cursor" aria-hidden="true" />
+      <div className="self-start rounded-[16px_16px_16px_4px] bg-em-bubble-bot px-3.5 py-2" aria-label={t.chat.pending}>
+        <ThinkingIndicator label={t.chat.thinking} />
       </div>
     );
   }
@@ -167,10 +177,8 @@ export function PendingMessage() {
     <article className="flex items-start gap-3.5" aria-label={t.chat.pending}>
       <AssistantAvatar />
       <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-semibold text-em-muted">
-          {t.chat.assistant} <span className="font-normal">{t.chat.typing}</span>
-        </span>
-        <span className="em-cursor" aria-hidden="true" />
+        <span className="text-[13px] font-semibold text-em-muted">{t.chat.assistant}</span>
+        <ThinkingIndicator label={t.chat.thinking} />
       </div>
     </article>
   );
