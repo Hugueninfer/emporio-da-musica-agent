@@ -119,8 +119,7 @@ class Ferramentas:
         by_name = [cid for cid, name in cats.items() if _hits(query, set(tokens(name))) == len(query)]
         if by_name:
             return by_name
-        with self.store._db() as db:
-            descriptions = dict(db.execute("select category_id, description from categories"))
+        descriptions = self.store.category_descriptions
         return [cid for cid, d in descriptions.items() if _hits(query, set(tokens(d))) == len(query)]
 
     def buscar_produtos(

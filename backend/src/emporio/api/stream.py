@@ -91,12 +91,17 @@ def _json(content: Any) -> Any:
 
 
 async def ui_message_stream(
-    agent, inputs: dict, config: dict, metrics: TurnMetrics | None = None
+    agent, inputs: dict, config: dict, metrics: TurnMetrics | None = None, *, expose: bool = False
 ) -> AsyncIterator[dict]:
     """Roda o agente e devolve os chunks do protocolo (dicts), do `start` ao `finish`.
 
-    Com `metrics`, mede tokens, custo e latência; o resumo vai no `messageMetadata` do `finish`."""
+    Com `metrics`, mede tokens, custo e latência. Com `expose`, o resumo também vai no `messageMetadata`
+    do `finish` (avaliação e exemplos); no site fica só no servidor."""
     metrics = metrics or TurnMetrics(model="")
+
+    def finish() -> dict:
+        return {"type": "finish", "messageMetadata": metrics.summary()} if expose else {"type": "finish"}
+
     yield {"type": "start", "messageId": f"msg_{uuid.uuid4().hex}"}
     yield {"type": "start-step"}
 
@@ -165,7 +170,7 @@ async def ui_message_stream(
         for chunk in close_text():
             yield chunk
         yield {"type": "error", "errorText": "Não consegui responder agora. Tenta de novo em instantes?"}
-        yield {"type": "finish", "messageMetadata": metrics.summary()}
+        yield finish()
         return
 
     for chunk in close_text():
@@ -173,4 +178,4 @@ async def ui_message_stream(
     if filt.suggestions:
         yield {"type": "data-suggestions", "data": {"items": filt.suggestions}}
     yield {"type": "finish-step"}
-    yield {"type": "finish", "messageMetadata": metrics.summary()}
+    yield finish()

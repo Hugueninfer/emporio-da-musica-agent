@@ -44,7 +44,8 @@ class TestCusto:
         assert m.model_calls == 2 and m.output_tokens == 30
 
 
-def test_api_registra_turno_e_agrega(store):
+def test_api_registra_turno_e_agrega(store, monkeypatch):
+    monkeypatch.setattr("emporio.config.STREAM_METRICS", True)  # metadados no stream (avaliação/exemplos)
     model = ScriptedModel(
         script=[
             AIMessage(

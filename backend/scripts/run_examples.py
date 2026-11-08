@@ -14,6 +14,7 @@ import uuid
 
 # Sexta-feira, 20/02/2026 15:00: o pedido 7 foi entregue em 17/02 e o 8 está a caminho.
 os.environ.setdefault("STORE_NOW", "2026-02-20T15:00")
+os.environ.setdefault("EMPORIO_STREAM_METRICS", "1")  # custo e latência no fim de cada resposta
 
 from fastapi.testclient import TestClient  # noqa: E402
 from langgraph.checkpoint.memory import InMemorySaver  # noqa: E402

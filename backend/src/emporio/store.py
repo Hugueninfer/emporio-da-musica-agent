@@ -6,6 +6,8 @@
 import json
 import re
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from emporio.config import DB_PATH, POLICIES_PATH
@@ -75,6 +77,9 @@ class Store:
         self.db_path = db_path
         with self._db() as db:
             self.categories: dict[int, str] = dict(db.execute("select category_id, name from categories"))
+            self.category_descriptions: dict[int, str] = dict(
+                db.execute("select category_id, description from categories")
+            )
             self._products = [dict(r) for r in db.execute("select * from products order by product_id")]
             self.promotions = [dict(r) for r in db.execute("select * from promotions order by promotion_id")]
         self.active_promos = {p["product_id"]: p for p in self.promotions if p["is_active"]}
@@ -82,10 +87,15 @@ class Store:
         self.by_id = {p["id"]: p for p in self.products}
         self.policies: list[dict] = json.loads(Path(policies_path).read_text(encoding="utf-8"))
 
-    def _db(self) -> sqlite3.Connection:
+    @contextmanager
+    def _db(self) -> Iterator[sqlite3.Connection]:
+        # o `with` de uma conexão sqlite3 só faz commit; aqui ela é fechada de fato
         db = sqlite3.connect(self.db_path)
         db.row_factory = sqlite3.Row
-        return db
+        try:
+            yield db
+        finally:
+            db.close()
 
     def _product(self, r: dict) -> dict:
         cid, pid = r["category_id"], r["product_id"]

@@ -21,6 +21,9 @@ METRICS_PATH = VAR_DIR / "metrics.jsonl"
 
 TZ = ZoneInfo("America/Campo_Grande")
 MODEL = os.getenv("EMPORIO_MODEL", "claude-sonnet-5-5")
+# Métricas (custo, tokens) no `messageMetadata` do stream: só para a avaliação e os exemplos — o
+# navegador do cliente não precisa ver quanto cada resposta custa.
+STREAM_METRICS = os.getenv("EMPORIO_STREAM_METRICS") == "1"
 
 
 def now() -> datetime:

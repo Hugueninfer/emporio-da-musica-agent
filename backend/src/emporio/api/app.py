@@ -7,19 +7,19 @@ import logging
 import os
 import re
 from contextlib import asynccontextmanager
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, RemoveMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, RemoveMessage, ToolMessage
 from pydantic import BaseModel, Field
 
 from emporio import config
 from emporio.agent.graph import build_agent
 from emporio.agent.prompt import turn_context
 from emporio.api.language import detect_language
-from emporio.api.privacy import find_verification, redact
+from emporio.api.privacy import AttemptLimiter, find_verification, redact
 from emporio.api.stream import HEADERS, sse, ui_message_stream
 from emporio.metrics import MetricsLog, TurnMetrics
 from emporio.tools import Ferramentas
@@ -47,11 +47,19 @@ class ChatRequest(BaseModel):
     trigger: str | None = None
 
 
+class Turn(NamedTuple):
+    """O que o modelo recebe nesta vez."""
+
+    texto: str  # mensagem do cliente sem contato, com as notas do sistema
+    verificacoes: dict  # número do pedido → resultado da verificação feita pela API
+    idioma: str | None  # idioma detectado na mensagem ("pt"/"en"), se der para saber
+
+
 def text_of(message: UIMessage) -> str:
     return "".join(p.get("text", "") for p in message.parts if p.get("type") == "text").strip()
 
 
-def last_text(req: "ChatRequest") -> str:
+def last_text(req: ChatRequest) -> str:
     last = next((m for m in reversed(req.messages) if m.role == "user"), None)
     return text_of(last) if last else ""
 
@@ -62,20 +70,31 @@ def verification_note(numero: str, result: dict) -> str:
     return f"[Nota do sistema: verificação do pedido {numero} falhou — número e contato não conferem.]"
 
 
-def prepare_turn(req: ChatRequest, ferramentas: Ferramentas) -> tuple[str, dict]:
-    """Texto da vez para o modelo (sem contato, com as notas do sistema) e as verificações feitas pela API."""
-    text = last_text(req)
-    context = turn_context(config.now(), req.locale, detect_language(text))
-    dados = req.verificacao.model_dump() if req.verificacao else find_verification(text)
+TOO_MANY_ATTEMPTS = (
+    "[Nota do sistema: muitas tentativas de verificação que não conferiram. Não verifique agora; peça para "
+    "o cliente tentar mais tarde ou falar com a equipe pelo WhatsApp (67) 3341-4444.]"
+)
+
+
+def prepare_turn(
+    req: ChatRequest, ferramentas: Ferramentas, limiter: AttemptLimiter | None = None, origin: str = ""
+) -> Turn:
+    """Mensagem da vez para o modelo e as verificações de pedido feitas pela API (o contato fica aqui)."""
+    raw = last_text(req)
+    idioma = detect_language(raw)
+    text = redact(raw)
+    dados = req.verificacao.model_dump() if req.verificacao else find_verification(raw)
     verificacoes: dict = {}
-    if dados:
+    if dados and limiter and limiter.blocked(origin):
+        text = f"{text}\n\n{TOO_MANY_ATTEMPTS}"
+    elif dados:
         numero = re.sub(r"\D", "", dados["pedido"])
         result = ferramentas.consultar_pedido(numero, dados["contato"])
+        if not result.get("verificado") and limiter:
+            limiter.failed(origin)
         verificacoes[numero] = result
-        text = f"{redact(text)}\n\n{verification_note(numero, result)}"
-    else:
-        text = redact(text)
-    return f"{text}\n\n{context}", verificacoes
+        text = f"{text}\n\n{verification_note(numero, result)}"
+    return Turn(f"{text}\n\n{turn_context(config.now(), req.locale, idioma)}", verificacoes, idioma)
 
 
 def history_seed(req: ChatRequest) -> list[BaseMessage]:
@@ -102,6 +121,27 @@ async def drop_retried_turn(graph, cfg: dict, user_text: str) -> None:
     await graph.aupdate_state(cfg, {"messages": [RemoveMessage(id=m.id) for m in msgs[last_human:]]})
 
 
+def unanswered_tool_calls(messages: list[BaseMessage]) -> list[ToolMessage]:
+    """Respostas para chamadas de ferramenta que ficaram sem resultado.
+
+    Acontece quando o cliente clica em "Parar" depois de o modelo pedir uma ferramenta e antes de ela
+    rodar: a API da Anthropic recusa um histórico com `tool_use` sem `tool_result`, e a conversa
+    quebraria em todas as mensagens seguintes."""
+    answered = {m.tool_call_id for m in messages if isinstance(m, ToolMessage)}
+    return [
+        ToolMessage(
+            content='{"erro": "interrompido: o cliente parou a resposta antes de a consulta terminar"}',
+            tool_call_id=call["id"],
+            name=call["name"],
+            status="error",
+        )
+        for m in messages
+        if isinstance(m, AIMessage)
+        for call in m.tool_calls
+        if call["id"] not in answered
+    ]
+
+
 def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: MetricsLog | None = None) -> FastAPI:
     """`agent`/`ferramentas`/`metrics` podem ser injetados nos testes; em produção são criados no startup."""
 
@@ -109,6 +149,7 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
     async def lifespan(app: FastAPI):
         app.state.ferramentas = ferramentas or Ferramentas()
         app.state.metrics = metrics or MetricsLog(config.METRICS_PATH)
+        app.state.limiter = AttemptLimiter()
         if agent is not None:
             app.state.agent = agent
             yield
@@ -121,9 +162,10 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
             yield
 
     app = FastAPI(title="Clave — Empório da Música", lifespan=lifespan)
+    origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),
+        allow_origins=origins,
         allow_methods=["POST", "GET", "OPTIONS"],
         allow_headers=["*"],
     )
@@ -138,43 +180,48 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
         return app.state.metrics.report()
 
     @app.post("/api/chat")
-    async def chat(req: ChatRequest):
+    async def chat(req: ChatRequest, request: Request):
         graph = app.state.agent
-        text, verificacoes = prepare_turn(req, app.state.ferramentas)
+        origin = request.client.host if request.client else ""
+        turn = prepare_turn(req, app.state.ferramentas, app.state.limiter, origin)
         cfg = {"configurable": {"thread_id": req.id}, "recursion_limit": 25}
 
         if req.trigger == "regenerate-message":
             await drop_retried_turn(graph, cfg, last_text(req))
 
-        messages: list[BaseMessage] = []
         state = await graph.aget_state(cfg)
-        if not (state and state.values.get("messages")):
-            messages += history_seed(req)
-        messages.append(HumanMessage(text))
+        history = state.values.get("messages", []) if state else []
+        messages: list[BaseMessage] = unanswered_tool_calls(history) if history else history_seed(req)
+        messages.append(HumanMessage(turn.texto))
 
-        inputs: dict = {"messages": messages, "idioma": detect_language(last_text(req))}
-        if verificacoes:
-            inputs["verificacoes"] = verificacoes
+        inputs: dict = {"messages": messages, "idioma": turn.idioma}
+        if turn.verificacoes:
+            inputs["verificacoes"] = turn.verificacoes
 
-        turn = TurnMetrics(model=config.MODEL, thread_id=req.id)
+        metrics = TurnMetrics(model=config.MODEL, thread_id=req.id)
 
         async def body():
-            async for chunk in ui_message_stream(graph, inputs, cfg, turn):
-                yield sse(chunk)
-            yield sse("[DONE]")
-            summary = turn.summary()
-            app.state.metrics.record(summary)
-            log.info(
-                "resposta em %sms (1º token %sms) · %s chamada(s) ao modelo · cache %.0f%% · R$ %.4f · %s",
-                summary["latencia_ms"],
-                summary["primeiro_token_ms"],
-                summary["chamadas_modelo"],
-                summary["cache_hit"] * 100,
-                summary["custo_brl"],
-                ", ".join(f"{t['nome']} {t['ms']}ms" for t in summary["ferramentas"]) or "sem ferramentas",
-            )
+            try:
+                async for chunk in ui_message_stream(graph, inputs, cfg, metrics, expose=config.STREAM_METRICS):
+                    yield sse(chunk)
+                yield sse("[DONE]")
+            finally:  # registra também respostas interrompidas ("Parar" ou conexão caída): elas custam tokens
+                record(metrics)
 
         return StreamingResponse(body(), media_type="text/event-stream", headers=HEADERS)
+
+    def record(metrics: TurnMetrics) -> None:
+        summary = metrics.summary()
+        app.state.metrics.record(summary)
+        log.info(
+            "resposta em %sms (1º token %sms) · %s chamada(s) ao modelo · cache %.0f%% · R$ %.4f · %s",
+            summary["latencia_ms"],
+            summary["primeiro_token_ms"],
+            summary["chamadas_modelo"],
+            summary["cache_hit"] * 100,
+            summary["custo_brl"],
+            ", ".join(f"{t['nome']} {t['ms']}ms" for t in summary["ferramentas"]) or "sem ferramentas",
+        )
 
     return app
 

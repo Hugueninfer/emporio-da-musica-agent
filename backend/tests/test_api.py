@@ -2,7 +2,7 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
 from emporio.agent.graph import build_agent
@@ -150,3 +150,42 @@ def test_tentar_novamente_nao_apaga_turno_anterior(setup):
         client.post("/api/chat", json={"id": "c8", "messages": msgs, "trigger": "regenerate-message"})
     humanos = [m.content for m in model.calls[-1] if isinstance(m, HumanMessage)]
     assert len(humanos) == 2 and humanos[0].startswith("oi") and humanos[1].startswith("tem ukulele?")
+
+
+def test_parar_no_meio_da_ferramenta_nao_quebra_a_conversa(setup):
+    # "Parar" depois de o modelo pedir uma ferramenta e antes de ela rodar: o histórico fica com um
+    # tool_use sem resposta, que a API da Anthropic recusa no turno seguinte
+    import asyncio
+
+    client, model = setup(AIMessage("Oi de novo!"))
+    with client:
+        graph = client.app.state.agent
+        cfg = {"configurable": {"thread_id": "c9"}}
+        pendente = AIMessage(content="", tool_calls=[{"name": "status_loja", "args": {}, "id": "toolu_x"}])
+        asyncio.run(graph.aupdate_state(cfg, {"messages": [HumanMessage("abertos?"), pendente]}))
+        client.post("/api/chat", json={"id": "c9", "messages": [ui("user", "oi")]})
+    enviados = model.calls[-1]
+    respostas = [m for m in enviados if isinstance(m, ToolMessage) and m.tool_call_id == "toolu_x"]
+    assert len(respostas) == 1
+
+
+def test_metricas_nao_vao_para_o_navegador(setup):
+    client, _ = setup(AIMessage("Oi!"))
+    with client:
+        r = client.post("/api/chat", json={"id": "c10", "messages": [ui("user", "oi")]})
+    finish = next(e for e in events(r) if isinstance(e, dict) and e["type"] == "finish")
+    assert "messageMetadata" not in finish
+
+
+def test_limite_de_tentativas_de_verificacao(setup):
+    client, model = setup(*[AIMessage("Não conferiu.") for _ in range(6)])
+    with client:
+        for i in range(6):
+            body = {
+                "id": f"v{i}",
+                "messages": [ui("user", "Pedido #8")],
+                "verificacao": {"pedido": "8", "contato": f"(67) 90000-000{i}"},
+            }
+            client.post("/api/chat", json=body)
+    ultima = [m for m in model.calls[-1] if isinstance(m, HumanMessage)][-1].content
+    assert "muitas tentativas" in ultima

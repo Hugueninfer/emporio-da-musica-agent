@@ -42,3 +42,9 @@ def test_encontra_verificacao_no_texto(texto, pedido, contato):
 def test_sem_pedido_ou_sem_contato():
     assert find_verification("meu telefone é (67) 99654-7821") is None
     assert find_verification("cadê meu pedido 8?") is None
+
+
+def test_numeros_que_nao_sao_telefone():
+    texto = "Comprei o pedido 3 em 2025 1500 reais, quero trocar"
+    assert redact(texto) == texto
+    assert find_verification(texto) is None

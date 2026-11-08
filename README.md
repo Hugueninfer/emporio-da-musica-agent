@@ -12,7 +12,7 @@ consulta o manual quando a dúvida é de **política**, e recusa com educação 
 - **API:** FastAPI falando o protocolo de stream do Vercel AI SDK. **MCP:** as mesmas ferramentas
   expostas para qualquer cliente MCP.
 - **Qualidade medida:** avaliação automática com 43 casos (checagens determinísticas + LLM-as-judge),
-  119 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
+  123 testes, CI no GitHub Actions e custo/latência/cache registrados por resposta.
 - **Front (extra):** site + chat em Next.js que renderiza as chamadas de ferramenta como interface
   (cards de produto, card do pedido, fonte do manual, formulário de verificação).
 
@@ -80,7 +80,7 @@ Site em `http://localhost:3000` (inglês) e `http://localhost:3000/pt` (portugu�
 
 ```bash
 cd backend
-uv run pytest                            # 119 testes, sem chamar a API da Anthropic (roda no CI)
+uv run pytest                            # 123 testes, sem chamar a API da Anthropic (roda no CI)
 uv run python -m evals.run               # avaliação com o modelo real (~R$ 2,50, ~1 min)
 uv run python scripts/run_examples.py    # regenera examples/*.md com o modelo real
 uv run python -m emporio.mcp_server      # servidor MCP (stdio); --http para streamable HTTP
@@ -179,7 +179,8 @@ e o front mostra um formulário. A **API** confere número + contato e guarda s�
 conversa; o modelo recebe uma nota "verificação aprovada/falhou" e chama `consultar_pedido(numero)`,
 que só devolve pedidos já verificados naquela conversa. Telefone e e-mail digitados no chat também são
 usados para verificar e **apagados do texto** antes de chegar ao modelo e ao histórico. A resposta de
-erro é a mesma para "pedido não existe" e "contato não confere", para não revelar quais pedidos existem.
+erro é a mesma para "pedido não existe" e "contato não confere", para não revelar quais pedidos existem,
+e cada origem tem no máximo 5 verificações erradas a cada 15 minutos.
 
 **Stream no protocolo do Vercel AI SDK.** A API converte os eventos do LangGraph (`messages` +
 `updates`) em eventos `text-*`, `tool-input-*`, `tool-output-available` e `data-suggestions`. O front
@@ -230,7 +231,7 @@ promoção, política, loja, pedido, escopo, segurança e idioma. Cada caso pass
    tom e escopo.
 
 Resultado mais recente ([relatório](backend/evals/resultados/ultimo.md)): **43/43 casos, 119/119
-checagens, nota média 4,84/5**, custo da rodada ~R$ 3,30. Como o modelo é estocástico, rodadas
+checagens, nota média 4,93/5**, custo da rodada ~R$ 3,30. Como o modelo é estocástico, rodadas
 seguidas ficam entre 95% e 100%.
 
 A avaliação começou em **58%** e foi o que guiou as melhorias — parte eram falhas reais do agente, parte

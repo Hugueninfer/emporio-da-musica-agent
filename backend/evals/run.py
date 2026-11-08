@@ -29,6 +29,7 @@ from pathlib import Path
 
 # Sexta-feira, 20/02/2026 15:00 — mesmo relógio dos exemplos (pedido 7 entregue em 17/02, loja aberta).
 os.environ.setdefault("STORE_NOW", "2026-02-20T15:00")
+os.environ.setdefault("EMPORIO_STREAM_METRICS", "1")  # custo e latência no fim de cada resposta
 
 import httpx  # noqa: E402
 from langchain_anthropic import ChatAnthropic  # noqa: E402
@@ -131,7 +132,7 @@ async def run_case(client: httpx.AsyncClient, case: dict, sem: asyncio.Semaphore
             r = await client.post("/api/chat", json=body, timeout=120)
             r.raise_for_status()
             # o que o modelo recebeu: contato oculto + nota da verificação feita pela API
-            visto, _ = prepare_turn(ChatRequest(**body), f)
+            visto = prepare_turn(ChatRequest(**body), f).texto
             result = parse_stream(r.text) | {"cliente": text, "visto_pelo_modelo": visto}
             turns.append(result)
             history.append(
@@ -144,7 +145,10 @@ def deterministic_checks(case: dict, last: dict) -> list[dict]:
     reply = norm(last["resposta"])
     used = [t["nome"] for t in last["ferramentas"]]
     fontes = {
-        f["id"] for t in last["ferramentas"] if t["nome"] == "consultar_politicas" for f in t["saida"].get("fontes", [])
+        f["id"]
+        for t in last["ferramentas"]
+        if t["nome"] == "consultar_politicas"
+        for f in (t.get("saida") or {}).get("fontes", [])
     }
     checks = []
 
