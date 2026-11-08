@@ -1,0 +1,30 @@
+# Sobe tudo com um comando:  docker compose up --build
+# Antes: crie backend/.env a partir de backend/.env.example com a sua ANTHROPIC_API_KEY.
+name: emporio-clave
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: backend/.env
+    environment:
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8000:8000"
+    volumes:
+      - clave-var:/app/var # conversas e métricas sobrevivem a reinícios
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        NEXT_PUBLIC_CHAT_API: http://localhost:8000/api/chat
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  clave-var:
