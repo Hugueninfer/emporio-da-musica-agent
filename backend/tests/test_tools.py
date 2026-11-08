@@ -103,6 +103,10 @@ class TestPagamento:
         assert r["preco"] == 1967.18 and r["preco_tabela"] == 2399.0 and r["pix"] is None
         assert any("6.2" in o for o in r["observacoes"])
 
+    def test_explica_juros_e_parcela_minima(self, f):
+        obs = " ".join(f.calcular_pagamento(119)["observacoes"])
+        assert "sem juros" in obs and "R$ 80" in obs
+
     def test_quantidade(self, f):
         assert f.calcular_pagamento(116, quantidade=2)["preco"] == 399.8
 
@@ -121,6 +125,8 @@ class TestPoliticas:
             ("vocês abrem domingo?", "2"),
             ("vendem cordas e palhetas?", "1"),
             ("can I return a guitar?", "4.1"),
+            ("Comprei um violão com setup personalizado e quero trocar. Pode?", "4.4"),
+            ("comprei na liquidação com venda final, posso trocar?", "4.4"),
         ],
     )
     def test_secao_certa_primeiro(self, f, pergunta, secao):

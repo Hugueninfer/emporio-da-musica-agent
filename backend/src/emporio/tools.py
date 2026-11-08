@@ -59,6 +59,7 @@ def _hits(query: list[str], haystack: set[str]) -> int:
 TOPICS: list[tuple[str, dict[str, int]]] = [
     (r"devolv|devoluc|arrepend|desist|reembols|estorn|return|refund", {"4.1": 6, "4.3": 2, "4.4": 1}),
     (r"troca|trocar|exchange|swap", {"4.3": 4, "4.1": 3, "4.2": 3, "4.4": 2}),
+    (r"personaliz|setup|regulage|sob encomenda|venda final|boquilha|custom", {"4.4": 8}),
     (r"defeit|quebr|estrag|garantia|defect|broken|faulty|warrant", {"4.2": 6, "8.1": 4, "8.2": 3, "8.3": 2}),
     (r"frete|entreg|envio|enviar|chega|correio|sedex|\bpac\b|jadlog|motoboy|shipping|deliver", {"5.1": 5, "5.2": 5}),
     (r"rastre|rastro|tracking|codigo de", {"5.3": 6}),
@@ -211,7 +212,13 @@ class Ferramentas:
         tabela = money(p["price"] * quantidade)
         preco = money(promo["price"] * quantidade) if promo else tabela
 
-        observacoes = ["Débito, boleto e Pix são à vista; o boleto compensa em até 3 dias úteis (3)."]
+        observacoes = [
+            "Crédito em até 12x sem juros; as opções acima já respeitam a parcela mínima "
+            "(até 3x: R$ 50; de 4x a 6x: R$ 80; de 7x a 12x: R$ 100) (3.1).",
+            "Débito, boleto e Pix são à vista; o boleto compensa em até 3 dias úteis (3).",
+        ]
+        if not promo:
+            observacoes.append("Pix tem 5% de desconto sobre o preço de tabela (3).")
         if promo:
             observacoes.append(
                 f"Preço já tem {promo['percent']}% de desconto ({promo['label']}); "

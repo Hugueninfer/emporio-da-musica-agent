@@ -149,6 +149,8 @@ def run(client: TestClient, slug: str, title: str, locale: str, turns: list) -> 
                 tools[e["toolCallId"]] = {"name": e["toolName"], "input": e["input"]}
             elif e["type"] == "tool-output-available":
                 tools[e["toolCallId"]]["output"] = e["output"]
+            elif e["type"] == "text-start" and reply:
+                reply += "\n\n"  # partes de texto separadas (antes/depois de uma ferramenta)
             elif e["type"] == "text-delta":
                 reply += e["delta"]
             elif e["type"] == "data-suggestions":

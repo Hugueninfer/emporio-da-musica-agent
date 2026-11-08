@@ -18,8 +18,8 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
-      - run: uv run ruff check src tests scripts
-      - run: uv run ruff format --check src tests scripts
+      - run: uv run ruff check src tests scripts evals
+      - run: uv run ruff format --check src tests scripts evals
       - run: uv run pytest -q
 
   frontend:

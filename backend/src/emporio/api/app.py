@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from emporio import config
 from emporio.agent.graph import ClaveContext, build_agent
+from emporio.api.language import detect_language
 from emporio.api.privacy import find_verification, redact
 from emporio.api.stream import HEADERS, sse, ui_message_stream
 from emporio.metrics import MetricsLog, TurnMetrics
@@ -47,6 +48,11 @@ def text_of(message: UIMessage) -> str:
     return "".join(p.get("text", "") for p in message.parts if p.get("type") == "text").strip()
 
 
+def last_text(req: "ChatRequest") -> str:
+    last = next((m for m in reversed(req.messages) if m.role == "user"), None)
+    return text_of(last) if last else ""
+
+
 def verification_note(numero: str, result: dict) -> str:
     if result.get("verificado"):
         return f"[Nota do sistema: verificação do pedido {numero} aprovada. Consulte com consultar_pedido.]"
@@ -55,8 +61,7 @@ def verification_note(numero: str, result: dict) -> str:
 
 def prepare_turn(req: ChatRequest, ferramentas: Ferramentas) -> tuple[str, dict]:
     """Texto da vez para o modelo (sem contato) e as verificações feitas pela API."""
-    last = next((m for m in reversed(req.messages) if m.role == "user"), None)
-    text = text_of(last) if last else ""
+    text = last_text(req)
     dados = req.verificacao.model_dump() if req.verificacao else find_verification(text)
     verificacoes: dict = {}
     if dados:
@@ -135,7 +140,8 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
         turn = TurnMetrics(model=config.MODEL, thread_id=req.id)
 
         async def body():
-            async for chunk in ui_message_stream(graph, inputs, cfg, ClaveContext(locale=req.locale), turn):
+            context = ClaveContext(locale=req.locale, customer_language=detect_language(last_text(req)))
+            async for chunk in ui_message_stream(graph, inputs, cfg, context, turn):
                 yield sse(chunk)
             yield sse("[DONE]")
             summary = turn.summary()

@@ -30,6 +30,9 @@ def test_nao_mexe_em_numero_de_pedido_nem_preco():
         ("Pedido 8, telefone (67) 99654-7821", "8", "(67) 99654-7821"),
         ("meu pedido é o #15 e o email anacarol.ferreira@coldmail.com", "15", "anacarol.ferreira@coldmail.com"),
         ("order 7 - phone 67 99789 0123", "7", "67 99789 0123"),
+        ("Meu pedido é o 18 e meu telefone é (67) 98098-7654", "18", "(67) 98098-7654"),
+        ("o número do pedido é 12, email isabela.moreira@jmail.com", "12", "isabela.moreira@jmail.com"),
+        ("my order number is #15, phone 67 98109-8765", "15", "67 98109-8765"),
     ],
 )
 def test_encontra_verificacao_no_texto(texto, pedido, contato):

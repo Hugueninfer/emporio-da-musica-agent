@@ -31,6 +31,7 @@ class ClaveContext:
     """Dados da requisição que não fazem parte da conversa."""
 
     locale: str = "pt"
+    customer_language: str | None = None  # detectado na última mensagem (pt/en), se der
 
 
 @dynamic_prompt
@@ -40,7 +41,7 @@ def clave_prompt(request: ModelRequest) -> SystemMessage:
     return SystemMessage(
         content=[
             {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}},
-            {"type": "text", "text": context_block(config.now(), ctx.locale)},
+            {"type": "text", "text": context_block(config.now(), ctx.locale, ctx.customer_language)},
         ]
     )
 
