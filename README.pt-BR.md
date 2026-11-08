@@ -286,7 +286,8 @@ eram falhas do próprio avaliador:
 ## Exemplos de conversa
 
 Gerados com o modelo real por `backend/scripts/run_examples.py`, com o relógio da loja em
-20/02/2026 15:00. Cada arquivo mostra as ferramentas chamadas e o resultado resumido.
+20/02/2026 15:00. Cada arquivo mostra as ferramentas chamadas e o resultado resumido. Os mesmos cenários
+com o cliente escrevendo em inglês estão em [`examples/en/`](examples/en/).
 
 1. [Violão para iniciante + parcelamento](examples/01-violao-iniciante-e-parcelamento.md) — busca com filtros e regras de parcela da 3.1
 2. [Promoção, Pix e campanha encerrada](examples/02-promocao-pix-e-campanha-encerrada.md) — 6.2 (não acumula) e 7.3 (promoção expirada)

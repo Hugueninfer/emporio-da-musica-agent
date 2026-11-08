@@ -292,15 +292,16 @@ were flaws in the evaluator itself:
 
 ## Example conversations
 
-Generated with the real model by `backend/scripts/run_examples.py`, with the store clock set to
-2026-02-20 15:00. Each file shows the tools called and a summary of their results. Conversations 1, 2, 3
-and 5 are in Portuguese, as the store's customers would write.
+Real conversations generated with the model by `backend/scripts/run_examples.py`, with the store clock set
+to 2026-02-20 15:00. Each file shows the tools called and a summary of their results. The same scenarios
+were run with the customer writing in English ([`examples/en/`](examples/en/)) and in Portuguese
+([`examples/`](examples/)).
 
-1. [Beginner guitar + installments](examples/01-violao-iniciante-e-parcelamento.md) — filtered search and the installment rules of 3.1
-2. [Promotion, Pix and an expired campaign](examples/02-promocao-pix-e-campanha-encerrada.md) — 6.2 (no stacking) and 7.3 (expired promotion)
-3. [Return with order verification](examples/03-devolucao-com-verificacao-de-pedido.md) — privacy flow + the real order's deadlines (4.1)
-4. [English-speaking customer: hours, accessories and guitars](examples/04-english-hours-and-accessories.md)
-5. [Out of scope and an empty category](examples/05-fora-de-escopo-e-categoria-vazia.md) — includes an attempt to bypass the rules
+1. [Beginner guitar + installments](examples/en/01-beginner-guitar-and-installments.md) — filtered search and the installment rules of 3.1
+2. [Promotion, Pix and an expired campaign](examples/en/02-promotion-pix-and-expired-campaign.md) — 6.2 (no stacking) and 7.3 (expired promotion)
+3. [Return with order verification](examples/en/03-return-with-order-verification.md) — privacy flow + the real order's deadlines (4.1)
+4. [Store hours, accessories and electric guitars](examples/en/04-hours-and-accessories.md)
+5. [Out of scope and an empty category](examples/en/05-out-of-scope-and-empty-category.md) — includes an attempt to bypass the rules
 
 ---
 
