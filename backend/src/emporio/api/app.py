@@ -9,7 +9,7 @@ import re
 from contextlib import asynccontextmanager
 from typing import Any, Literal, NamedTuple
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, RemoveMessage, ToolMessage
@@ -19,8 +19,9 @@ from emporio import config
 from emporio.agent.graph import build_agent
 from emporio.agent.prompt import turn_context
 from emporio.api.language import detect_language
-from emporio.api.privacy import AttemptLimiter, find_verification, redact
-from emporio.api.stream import HEADERS, sse, ui_message_stream
+from emporio.api.limits import MESSAGES, DailyCounter, SlidingWindow
+from emporio.api.privacy import find_verification, redact
+from emporio.api.stream import HEADERS, canned_message, sse, ui_message_stream
 from emporio.metrics import MetricsLog, TurnMetrics
 from emporio.tools import Ferramentas
 
@@ -76,8 +77,11 @@ TOO_MANY_ATTEMPTS = (
 )
 
 
+MAX_FAILED_VERIFICATIONS = 5  # por origem, a cada 15 minutos
+
+
 def prepare_turn(
-    req: ChatRequest, ferramentas: Ferramentas, limiter: AttemptLimiter | None = None, origin: str = ""
+    req: ChatRequest, ferramentas: Ferramentas, limiter: SlidingWindow | None = None, origin: str = ""
 ) -> Turn:
     """Mensagem da vez para o modelo e as verificações de pedido feitas pela API (o contato fica aqui)."""
     raw = last_text(req)
@@ -85,13 +89,13 @@ def prepare_turn(
     text = redact(raw)
     dados = req.verificacao.model_dump() if req.verificacao else find_verification(raw)
     verificacoes: dict = {}
-    if dados and limiter and limiter.blocked(origin):
+    if dados and limiter and limiter.blocked(origin, MAX_FAILED_VERIFICATIONS):
         text = f"{text}\n\n{TOO_MANY_ATTEMPTS}"
     elif dados:
         numero = re.sub(r"\D", "", dados["pedido"])
         result = ferramentas.consultar_pedido(numero, dados["contato"])
         if not result.get("verificado") and limiter:
-            limiter.failed(origin)
+            limiter.hit(origin)
         verificacoes[numero] = result
         text = f"{text}\n\n{verification_note(numero, result)}"
     return Turn(f"{text}\n\n{turn_context(config.now(), req.locale, idioma)}", verificacoes, idioma)
@@ -149,7 +153,9 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
     async def lifespan(app: FastAPI):
         app.state.ferramentas = ferramentas or Ferramentas()
         app.state.metrics = metrics or MetricsLog(config.METRICS_PATH)
-        app.state.limiter = AttemptLimiter()
+        app.state.limiter = SlidingWindow(15 * 60)  # verificações de pedido que falharam
+        app.state.visitors = SlidingWindow(10 * 60)  # mensagens por visitante
+        app.state.daily = DailyCounter()
         if agent is not None:
             app.state.agent = agent
             yield
@@ -175,14 +181,40 @@ def create_app(agent=None, ferramentas: Ferramentas | None = None, metrics: Metr
         return {"ok": True, "modelo": config.MODEL, "chave_configurada": bool(os.getenv("ANTHROPIC_API_KEY"))}
 
     @app.get("/metrics")
-    async def metrics_report():
+    async def metrics_report(token: str | None = None):
         """Custo, tokens, cache e latência agregados das respostas (últimas 2000)."""
+        if config.METRICS_TOKEN and token != config.METRICS_TOKEN:
+            raise HTTPException(status_code=401, detail="token inválido")
         return app.state.metrics.report()
+
+    def limit_reply(req: ChatRequest, origin: str) -> str | None:
+        """Texto pronto quando a mensagem passa de algum limite (aí o modelo nem é chamado)."""
+        text = last_text(req)
+        lang = detect_language(text) or req.locale
+        if len(text) > config.MAX_MESSAGE_CHARS:
+            return MESSAGES["longa"][lang].format(max=config.MAX_MESSAGE_CHARS)
+        if app.state.visitors.blocked(origin, config.RATE_PER_VISITOR):
+            return MESSAGES["visitante"][lang]
+        if app.state.daily.blocked(config.DAILY_LIMIT):
+            log.warning("teto diário de %s mensagens atingido", config.DAILY_LIMIT)
+            return MESSAGES["diario"][lang]
+        app.state.visitors.hit(origin)
+        app.state.daily.hit()
+        return None
 
     @app.post("/api/chat")
     async def chat(req: ChatRequest, request: Request):
         graph = app.state.agent
         origin = request.client.host if request.client else ""
+        if reply := limit_reply(req, origin):
+
+            async def canned():
+                async for chunk in canned_message(reply):
+                    yield sse(chunk)
+                yield sse("[DONE]")
+
+            return StreamingResponse(canned(), media_type="text/event-stream", headers=HEADERS)
+
         turn = prepare_turn(req, app.state.ferramentas, app.state.limiter, origin)
         cfg = {"configurable": {"thread_id": req.id}, "recursion_limit": 25}
 

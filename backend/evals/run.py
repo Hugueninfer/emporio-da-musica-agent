@@ -30,6 +30,8 @@ from pathlib import Path
 # Sexta-feira, 20/02/2026 15:00 — mesmo relógio dos exemplos (pedido 7 entregue em 17/02, loja aberta).
 os.environ.setdefault("STORE_NOW", "2026-02-20T15:00")
 os.environ.setdefault("EMPORIO_STREAM_METRICS", "1")  # custo e latência no fim de cada resposta
+os.environ.setdefault("RATE_PER_VISITOR", "100000")  # roda dezenas de mensagens seguidas do mesmo IP
+os.environ.setdefault("DAILY_LIMIT", "100000")
 
 import httpx  # noqa: E402
 from langchain_anthropic import ChatAnthropic  # noqa: E402

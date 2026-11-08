@@ -25,6 +25,12 @@ MODEL = os.getenv("EMPORIO_MODEL", "claude-sonnet-5-5")
 # navegador do cliente não precisa ver quanto cada resposta custa.
 STREAM_METRICS = os.getenv("EMPORIO_STREAM_METRICS") == "1"
 
+# Limites da API pública (cada mensagem custa tokens da chave da Anthropic)
+RATE_PER_VISITOR = int(os.getenv("RATE_PER_VISITOR", "30"))  # mensagens por visitante a cada 10 min
+DAILY_LIMIT = int(os.getenv("DAILY_LIMIT", "500"))  # mensagens por dia, somando todos
+MAX_MESSAGE_CHARS = int(os.getenv("MAX_MESSAGE_CHARS", "2000"))
+METRICS_TOKEN = os.getenv("METRICS_TOKEN") or None  # se definido, /metrics?token=… é exigido
+
 
 def now() -> datetime:
     """Agora no fuso da loja. `STORE_NOW` (ISO) fixa o relógio — útil nos exemplos e testes."""

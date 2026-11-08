@@ -81,6 +81,16 @@ class SuggestionFilter:
         self.suggestions = [s for s in items if s][:3]
 
 
+async def canned_message(text: str) -> AsyncIterator[dict]:
+    """Resposta pronta da Clave, sem chamar o modelo (limites de uso)."""
+    text_id = f"txt_{uuid.uuid4().hex[:12]}"
+    yield {"type": "start", "messageId": f"msg_{uuid.uuid4().hex}"}
+    yield {"type": "text-start", "id": text_id}
+    yield {"type": "text-delta", "id": text_id, "delta": text}
+    yield {"type": "text-end", "id": text_id}
+    yield {"type": "finish"}
+
+
 def _json(content: Any) -> Any:
     if isinstance(content, str):
         try:

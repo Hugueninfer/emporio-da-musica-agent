@@ -189,3 +189,43 @@ def test_limite_de_tentativas_de_verificacao(setup):
             client.post("/api/chat", json=body)
     ultima = [m for m in model.calls[-1] if isinstance(m, HumanMessage)][-1].content
     assert "muitas tentativas" in ultima
+
+
+def texto_da_resposta(r):
+    return "".join(e["delta"] for e in events(r) if isinstance(e, dict) and e["type"] == "text-delta")
+
+
+def test_limite_por_visitante_responde_sem_chamar_o_modelo(setup, monkeypatch):
+    monkeypatch.setattr("emporio.config.RATE_PER_VISITOR", 2)
+    client, model = setup(AIMessage("1"), AIMessage("2"), AIMessage("3"))
+    with client:
+        for i in range(2):
+            client.post("/api/chat", json={"id": f"r{i}", "messages": [ui("user", "oi")]})
+        r = client.post("/api/chat", json={"id": "r9", "locale": "pt", "messages": [ui("user", "oi")]})
+    assert len(model.calls) == 2  # a 3ª mensagem não chegou ao modelo
+    assert "muitas mensagens" in texto_da_resposta(r)
+
+
+def test_teto_diario_global(setup, monkeypatch):
+    monkeypatch.setattr("emporio.config.DAILY_LIMIT", 1)
+    client, model = setup(AIMessage("1"), AIMessage("2"))
+    with client:
+        client.post("/api/chat", json={"id": "d1", "messages": [ui("user", "oi")]})
+        r = client.post("/api/chat", json={"id": "d2", "locale": "en", "messages": [ui("user", "hi")]})
+    assert len(model.calls) == 1
+    assert "today" in texto_da_resposta(r)
+
+
+def test_mensagem_muito_longa(setup):
+    client, model = setup(AIMessage("x"))
+    with client:
+        r = client.post("/api/chat", json={"id": "l1", "messages": [ui("user", "a" * 5000)]})
+    assert model.calls == [] and "longa" in texto_da_resposta(r)
+
+
+def test_metrics_com_token(setup, monkeypatch):
+    monkeypatch.setattr("emporio.config.METRICS_TOKEN", "segredo")
+    client, _ = setup()
+    with client:
+        assert client.get("/metrics").status_code == 401
+        assert client.get("/metrics", params={"token": "segredo"}).status_code == 200

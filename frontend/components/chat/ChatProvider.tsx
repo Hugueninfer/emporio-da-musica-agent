@@ -51,6 +51,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     currentLocale = locale;
   }, [locale]);
+  // Backend externo em plano gratuito dorme quando ninguém usa: o site o acorda assim que abre, para a
+  // primeira pergunta não esperar ~1 min.
+  useEffect(() => {
+    if (CHAT_API.startsWith("http")) void fetch(CHAT_API.replace(/\/api\/chat$/, "/health")).catch(() => {});
+  }, []);
   // Id provisório no servidor; o definitivo (aleatório) é gerado no cliente, logo após hidratar.
   const [chat, setChat] = useState(() => createChat("pendente"));
   const [conversations, setConversations] = useState<ConversationMeta[]>([]);
