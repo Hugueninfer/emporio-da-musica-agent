@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useSmoothText } from "@/lib/use-smooth-text";
 import { cn } from "@/lib/utils";
 
 const components: Components = {
@@ -31,12 +33,31 @@ const components: Components = {
   code: ({ children }) => <code className="rounded bg-em-surface-2 px-1 font-mono text-[0.9em]">{children}</code>,
 };
 
-/** Texto do assistente em markdown. `streaming` desenha o cursor laranja no fim do último bloco. */
-export function TextPart({ text, streaming }: { text: string; streaming?: boolean }) {
+/**
+ * Texto do assistente em markdown, revelado com efeito de digitação enquanto chega (`live`).
+ * O cursor laranja fica no fim do último bloco enquanto o texto ainda está aparecendo.
+ */
+export function TextPart({
+  text,
+  streaming,
+  live = false,
+  onRevealingChange,
+}: {
+  text: string;
+  streaming?: boolean;
+  live?: boolean;
+  onRevealingChange?: (revealing: boolean) => void;
+}) {
+  const { shown, revealing } = useSmoothText(text, live);
+
+  useEffect(() => {
+    onRevealingChange?.(revealing);
+  }, [revealing, onRevealingChange]);
+
   return (
-    <div className={cn("flex flex-col gap-2.5 break-words", streaming && "em-streaming")}>
+    <div className={cn("flex flex-col gap-2.5 break-words", (streaming || revealing) && "em-streaming")}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {text}
+        {shown}
       </ReactMarkdown>
     </div>
   );

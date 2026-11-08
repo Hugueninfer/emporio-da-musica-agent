@@ -37,11 +37,23 @@ export function MessageList({ scrollRef, className }: { scrollRef: RefObject<HTM
     if (stick.current) endRef.current?.scrollIntoView({ block: "end" });
   });
 
+  // O texto cresce aos poucos (efeito de digitação) sem mudar a lista: acompanha pelo tamanho.
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (stick.current) endRef.current?.scrollIntoView({ block: "end" });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const last = messages.at(-1);
   const busy = status === "submitted" || status === "streaming";
 
   return (
-    <div role="log" aria-live="polite" aria-relevant="additions" className={cn("flex flex-col", className)}>
+    <div ref={listRef} role="log" aria-live="polite" aria-relevant="additions" className={cn("flex flex-col", className)}>
       {messages.map((m, i) => (
         <Message
           key={m.id}

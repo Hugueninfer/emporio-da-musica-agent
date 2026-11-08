@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { AssistantAvatar } from "@/components/brand/Logo";
 import type { Product } from "@/lib/catalog";
 import type { EmUIMessage, PolicySource } from "@/lib/chat-types";
@@ -55,6 +55,11 @@ function ToolResult({ name, output, isLast }: { name: string; output: unknown; i
 export function Message({ message, streaming, isLast }: { message: EmUIMessage; streaming: boolean; isLast: boolean }) {
   const { variant } = useChatSurface();
   const { t } = useI18n();
+  const [revealing, setRevealing] = useState<Record<number, boolean>>({});
+  const onRevealing = useCallback(
+    (i: number, r: boolean) => setRevealing((prev) => (prev[i] === r ? prev : { ...prev, [i]: r })),
+    [],
+  );
 
   if (message.role === "user") {
     const text = message.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
@@ -72,13 +77,22 @@ export function Message({ message, streaming, isLast }: { message: EmUIMessage; 
   }
 
   const sources: PolicySource[] = [];
+  // Partes de texto ainda "digitando": sugestões e fontes só aparecem quando tudo terminou.
+  const settled = !streaming && !Object.values(revealing).some(Boolean);
   const lastTextIndex = message.parts.findLastIndex((p) => p.type === "text");
   const blocks: ReactNode[] = [];
 
   message.parts.forEach((part, i) => {
     if (part.type === "text") {
       if (!part.text) return;
-      const text = <TextPart text={part.text} streaming={streaming && i === lastTextIndex} />;
+      const text = (
+        <TextPart
+          text={part.text}
+          streaming={streaming && i === lastTextIndex}
+          live={streaming}
+          onRevealingChange={(r) => onRevealing(i, r)}
+        />
+      );
       blocks.push(
         variant === "widget" ? (
           <div key={i} className="max-w-[92%] self-start rounded-[16px_16px_16px_4px] bg-em-bubble-bot px-3.5 py-[11px]">
@@ -92,7 +106,7 @@ export function Message({ message, streaming, isLast }: { message: EmUIMessage; 
     }
 
     if (part.type === "data-suggestions") {
-      if (isLast && !streaming) blocks.push(<SuggestionChips key={i} items={part.data.items} />);
+      if (isLast && settled) blocks.push(<SuggestionChips key={i} items={part.data.items} />);
       return;
     }
 
@@ -116,7 +130,7 @@ export function Message({ message, streaming, isLast }: { message: EmUIMessage; 
   const content = (
     <>
       {blocks}
-      {!streaming && uniqueSources.map((s) => <SourceChip key={s.secao} source={s} />)}
+      {settled && uniqueSources.map((s) => <SourceChip key={s.secao} source={s} />)}
     </>
   );
 
